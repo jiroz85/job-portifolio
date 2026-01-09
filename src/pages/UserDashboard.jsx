@@ -1,0 +1,786 @@
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  FiBriefcase,
+  FiUser,
+  FiClock,
+  FiCheckCircle,
+  FiXCircle,
+  FiMapPin,
+  FiDollarSign,
+  FiCalendar,
+  FiFilter,
+  FiBookmark,
+  FiSettings,
+  FiDownload,
+  FiEye,
+  FiSearch,
+  FiUpload,
+  FiStar,
+  FiTrendingUp,
+  FiFileText,
+  FiEdit,
+} from "react-icons/fi";
+import useAuth from "../hooks/useAuth";
+import { useApplications } from "../context/ApplicationContext";
+
+const UserDashboard = () => {
+  const { user } = useAuth();
+  const { getUserApplications } = useApplications();
+  const userApplications = getUserApplications(user?.email);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [savedJobs, setSavedJobs] = useState(() => {
+    const savedJobsFromStorage = JSON.parse(
+      localStorage.getItem("savedJobs") || "[]"
+    );
+    return savedJobsFromStorage;
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [profileCompletion] = useState(75);
+
+  const mockSavedJobs = [
+    {
+      id: 1,
+      title: "Senior React Developer",
+      company: "Tech Corp",
+      location: "San Francisco, CA",
+      salary: "$120,000 - $180,000",
+      posted: "2 days ago",
+      type: "Full-time",
+      description: "Looking for experienced React developer...",
+    },
+    {
+      id: 2,
+      title: "Product Designer",
+      company: "Design Co",
+      location: "Remote",
+      salary: "$80,000 - $110,000",
+      posted: "1 week ago",
+      type: "Full-time",
+      description: "Creative product designer needed...",
+    },
+  ];
+
+  const mockRecommendedJobs = [
+    {
+      id: 5,
+      title: "Frontend Engineer",
+      company: "StartupXYZ",
+      location: "New York, NY",
+      salary: "$90,000 - $130,000",
+      posted: "1 day ago",
+      type: "Full-time",
+      match: "95%",
+      description: "Exciting opportunity for frontend engineer...",
+    },
+    {
+      id: 6,
+      title: "React Native Developer",
+      company: "MobileFirst",
+      location: "Remote",
+      salary: "$100,000 - $140,000",
+      posted: "3 days ago",
+      type: "Full-time",
+      match: "88%",
+      description: "Build amazing mobile apps with React Native...",
+    },
+  ];
+
+  const mockResumes = [
+    {
+      id: 1,
+      name: "John_Doe_Resume_2024.pdf",
+      uploadedDate: "2024-01-10",
+      size: "245 KB",
+      isDefault: true,
+    },
+    {
+      id: 2,
+      name: "John_Doe_Tech_Resume.pdf",
+      uploadedDate: "2024-01-05",
+      size: "198 KB",
+      isDefault: false,
+    },
+  ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "applied":
+        return "bg-blue-100 text-blue-800";
+      case "interview":
+        return "bg-yellow-100 text-yellow-800";
+      case "offer":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "applied":
+        return <FiClock className="h-4 w-4" />;
+      case "interview":
+        return <FiUser className="h-4 w-4" />;
+      case "offer":
+        return <FiCheckCircle className="h-4 w-4" />;
+      case "rejected":
+        return <FiXCircle className="h-4 w-4" />;
+      default:
+        return <FiClock className="h-4 w-4" />;
+    }
+  };
+
+  const stats = userApplications.reduce(
+    (acc, app) => {
+      acc[app.status]++;
+      return acc;
+    },
+    {
+      applied: 0,
+      interviews: 0,
+      offers: 0,
+      rejected: 0,
+      saved: savedJobs.length,
+    }
+  );
+
+  const filteredApplications = userApplications.filter((app) => {
+    const matchesSearch =
+      app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.company.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || app.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleSaveJob = (jobId) => {
+    const updatedSavedJobs = [...savedJobs];
+    const jobIndex = updatedSavedJobs.findIndex((job) => job.id === jobId);
+
+    if (jobIndex > -1) {
+      updatedSavedJobs.splice(jobIndex, 1);
+    } else {
+      const jobToSave = mockSavedJobs.find((job) => job.id === jobId);
+      if (jobToSave) {
+        updatedSavedJobs.push(jobToSave);
+      }
+    }
+
+    setSavedJobs(updatedSavedJobs);
+    localStorage.setItem("savedJobs", JSON.stringify(updatedSavedJobs));
+  };
+
+  const handleUploadResume = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // In a real app, this would upload to server
+      console.log("Uploading resume:", file.name);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Welcome back, {user?.name || "User"}!
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Here's an overview of your job applications and activities.
+          </p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="mb-8 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              "overview",
+              "applications",
+              "saved",
+              "recommended",
+              "resumes",
+            ].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
+                  activeTab === tab
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <div>
+            {/* Profile Completion */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Profile Completion
+                </h3>
+                <span className="text-2xl font-bold text-blue-600">
+                  {profileCompletion}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${profileCompletion}%` }}
+                ></div>
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                Complete your profile to increase visibility to recruiters
+              </p>
+              <Link
+                to="/profile"
+                className="mt-3 inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+              >
+                <FiEdit className="mr-1" />
+                Complete Profile
+              </Link>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <FiBriefcase className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">
+                      Applications
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.applied}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center">
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <FiUser className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">
+                      Interviews
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.interviews}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <FiCheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Offers</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.offers}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center">
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <FiXCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">
+                      Rejected
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.rejected}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Applications */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200 mb-8">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Recent Applications
+                </h2>
+                <Link
+                  to="#"
+                  onClick={() => setActiveTab("applications")}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {userApplications.slice(0, 3).map((application) => (
+                  <div key={application.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {application.jobTitle}
+                          </h3>
+                          <span className="ml-3 text-sm text-gray-500">
+                            at {application.company}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Applied on{" "}
+                          {new Date(
+                            application.appliedDate
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                            application.status
+                          )}`}
+                        >
+                          {getStatusIcon(application.status)}
+                          <span className="ml-1 capitalize">
+                            {application.status}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommended Jobs */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Recommended Jobs
+                </h2>
+                <Link
+                  to="#"
+                  onClick={() => setActiveTab("recommended")}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {mockRecommendedJobs.slice(0, 3).map((job) => (
+                  <div key={job.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {job.title}
+                          </h3>
+                          <span className="ml-3 text-sm text-gray-500">
+                            at {job.company}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-1 text-sm text-gray-500">
+                          <FiMapPin className="h-3 w-3 mr-1" />
+                          {job.location}
+                          <span className="mx-2">•</span>
+                          <FiDollarSign className="h-3 w-3 mr-1" />
+                          {job.salary}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <FiStar className="h-3 w-3 mr-1" />
+                          {job.match} match
+                        </span>
+                        <button
+                          onClick={() => handleSaveJob(job.id)}
+                          className="text-gray-400 hover:text-blue-600"
+                        >
+                          <FiBookmark className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Applications Tab */}
+        {activeTab === "applications" && (
+          <div>
+            {/* Search and Filter */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search applications..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="applied">Applied</option>
+                  <option value="interview">Interview</option>
+                  <option value="offer">Offer</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Applications List */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Your Applications ({filteredApplications.length})
+                </h2>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {filteredApplications.length > 0 ? (
+                  filteredApplications.map((application) => (
+                    <div key={application.id} className="px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <h3 className="text-sm font-medium text-gray-900">
+                              {application.jobTitle}
+                            </h3>
+                            <span className="ml-3 text-sm text-gray-500">
+                              at {application.company}
+                            </span>
+                          </div>
+                          <div className="flex items-center mt-1 text-sm text-gray-500">
+                            <FiMapPin className="h-3 w-3 mr-1" />
+                            {application.location}
+                            <span className="mx-2">•</span>
+                            <FiDollarSign className="h-3 w-3 mr-1" />
+                            {application.salary}
+                            <span className="mx-2">•</span>
+                            <FiCalendar className="h-3 w-3 mr-1" />
+                            Applied:{" "}
+                            {new Date(
+                              application.appliedDate
+                            ).toLocaleDateString()}
+                          </div>
+                          {application.interviewDate && (
+                            <p className="mt-1 text-sm text-yellow-600">
+                              <FiUser className="inline h-3 w-3 mr-1" />
+                              Interview:{" "}
+                              {new Date(
+                                application.interviewDate
+                              ).toLocaleDateString()}
+                            </p>
+                          )}
+                          {application.offerDeadline && (
+                            <p className="mt-1 text-sm text-green-600">
+                              <FiCheckCircle className="inline h-3 w-3 mr-1" />
+                              Offer deadline:{" "}
+                              {new Date(
+                                application.offerDeadline
+                              ).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                              application.status
+                            )}`}
+                          >
+                            {getStatusIcon(application.status)}
+                            <span className="ml-1 capitalize">
+                              {application.status}
+                            </span>
+                          </span>
+                          <Link
+                            to={`/jobs/${application.jobId}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            <FiEye className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-6 py-8 text-center">
+                    <FiBriefcase className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      No applications found
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Start browsing and applying for jobs to see them here.
+                    </p>
+                    <div className="mt-6">
+                      <Link
+                        to="/jobs"
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        Browse Jobs
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Saved Jobs Tab */}
+        {activeTab === "saved" && (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Saved Jobs ({mockSavedJobs.length})
+              </h2>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {mockSavedJobs.length > 0 ? (
+                mockSavedJobs.map((job) => (
+                  <div key={job.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {job.title}
+                          </h3>
+                          <span className="ml-3 text-sm text-gray-500">
+                            at {job.company}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-1 text-sm text-gray-500">
+                          <FiMapPin className="h-3 w-3 mr-1" />
+                          {job.location}
+                          <span className="mx-2">•</span>
+                          <FiDollarSign className="h-3 w-3 mr-1" />
+                          {job.salary}
+                          <span className="mx-2">•</span>
+                          <FiClock className="h-3 w-3 mr-1" />
+                          {job.posted}
+                        </div>
+                        <p className="mt-2 text-sm text-gray-600">
+                          {job.description}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => handleSaveJob(job.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <FiBookmark className="h-4 w-4 fill-current" />
+                        </button>
+                        <Link
+                          to={`/jobs/${job.id}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View Job
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-6 py-8 text-center">
+                  <FiBookmark className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    No saved jobs yet
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Save jobs you're interested in to see them here.
+                  </p>
+                  <div className="mt-6">
+                    <Link
+                      to="/jobs"
+                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      Browse Jobs
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended Jobs Tab */}
+        {activeTab === "recommended" && (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Recommended Jobs ({mockRecommendedJobs.length})
+              </h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Based on your profile and search history
+              </p>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {mockRecommendedJobs.map((job) => (
+                <div key={job.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {job.title}
+                        </h3>
+                        <span className="ml-3 text-sm text-gray-500">
+                          at {job.company}
+                        </span>
+                      </div>
+                      <div className="flex items-center mt-1 text-sm text-gray-500">
+                        <FiMapPin className="h-3 w-3 mr-1" />
+                        {job.location}
+                        <span className="mx-2">•</span>
+                        <FiDollarSign className="h-3 w-3 mr-1" />
+                        {job.salary}
+                        <span className="mx-2">•</span>
+                        <FiClock className="h-3 w-3 mr-1" />
+                        {job.posted}
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600">
+                        {job.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <FiStar className="h-3 w-3 mr-1" />
+                        {job.match} match
+                      </span>
+                      <button
+                        onClick={() => handleSaveJob(job.id)}
+                        className="text-gray-400 hover:text-blue-600"
+                      >
+                        <FiBookmark className="h-4 w-4" />
+                      </button>
+                      <Link
+                        to={`/jobs/${job.id}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View Job
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Resumes Tab */}
+        {activeTab === "resumes" && (
+          <div>
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200 mb-6">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  My Resumes
+                </h2>
+                <label className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                  <FiUpload className="mr-2" />
+                  Upload Resume
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleUploadResume}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {mockResumes.map((resume) => (
+                  <div key={resume.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <FiFileText className="h-8 w-8 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {resume.name}
+                          </h3>
+                          <div className="flex items-center mt-1 text-sm text-gray-500">
+                            <FiCalendar className="h-3 w-3 mr-1" />
+                            {new Date(resume.uploadedDate).toLocaleDateString()}
+                            <span className="mx-2">•</span>
+                            {resume.size}
+                            {resume.isDefault && (
+                              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        {!resume.isDefault && (
+                          <button className="text-blue-600 hover:text-blue-800 text-sm">
+                            Set as Default
+                          </button>
+                        )}
+                        <button className="text-gray-600 hover:text-gray-800">
+                          <FiDownload className="h-4 w-4" />
+                        </button>
+                        <button className="text-red-600 hover:text-red-800">
+                          <FiXCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Profile Summary */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Profile Summary
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Name:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {user?.name || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Email:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {user?.email || "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Account Type:</span>
+                  <span className="text-sm font-medium text-gray-900 capitalize">
+                    {user?.role || "User"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboard;

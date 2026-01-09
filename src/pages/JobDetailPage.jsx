@@ -1,0 +1,451 @@
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  FaMapMarkerAlt,
+  FaBriefcase,
+  FaClock,
+  FaDollarSign,
+  FaArrowLeft,
+} from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useJobs } from "../context/JobContext";
+import { useApplications } from "../context/ApplicationContext";
+import { useAuth } from "../context/AuthContext";
+
+const JobDetailPage = () => {
+  const { id } = useParams();
+  const { getPublishedJobs } = useJobs();
+  const { submitApplication, hasUserApplied } = useApplications();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const [job, setJob] = useState(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [applicationData, setApplicationData] = useState({
+    fullName: "",
+    email: user?.email || "",
+    phone: "",
+    experience: "",
+    education: "",
+    skills: "",
+    coverLetter: "",
+    resume: null,
+  });
+  const [errors, setErrors] = useState({});
+
+  // Load job data
+  useEffect(() => {
+    const jobs = getPublishedJobs();
+    const foundJob = jobs.find((j) => j.id === parseInt(id));
+    setJob(foundJob);
+  }, [id, getPublishedJobs]);
+
+  const handleApplyClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (hasUserApplied(user.email, parseInt(id))) {
+      alert("You have already applied for this job!");
+      return;
+    }
+
+    setShowApplicationModal(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setApplicationData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setApplicationData((prev) => ({
+        ...prev,
+        resume: file,
+      }));
+    }
+  };
+
+  const validateApplication = () => {
+    const newErrors = {};
+    if (!applicationData.fullName.trim())
+      newErrors.fullName = "Full name is required";
+    if (!applicationData.email.trim()) newErrors.email = "Email is required";
+    if (!applicationData.phone.trim())
+      newErrors.phone = "Phone number is required";
+    if (!applicationData.experience.trim())
+      newErrors.experience = "Experience is required";
+    if (!applicationData.education.trim())
+      newErrors.education = "Education is required";
+    if (!applicationData.skills.trim())
+      newErrors.skills = "Skills are required";
+    if (!applicationData.coverLetter.trim())
+      newErrors.coverLetter = "Cover letter is required";
+    if (!applicationData.resume) newErrors.resume = "Resume is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmitApplication = (e) => {
+    e.preventDefault();
+    if (validateApplication()) {
+      const application = {
+        jobId: parseInt(id),
+        jobTitle: job.title,
+        company: job.company,
+        applicantName: applicationData.fullName,
+        email: applicationData.email,
+        phone: applicationData.phone,
+        experience: applicationData.experience,
+        education: applicationData.education,
+        skills: applicationData.skills,
+        coverLetter: applicationData.coverLetter,
+        resume: applicationData.resume?.name || "resume.pdf",
+      };
+
+      submitApplication(application);
+      alert("Application submitted successfully!");
+      setShowApplicationModal(false);
+      setApplicationData({
+        fullName: "",
+        email: user?.email || "",
+        phone: "",
+        experience: "",
+        education: "",
+        skills: "",
+        coverLetter: "",
+        resume: null,
+      });
+    }
+  };
+
+  if (!job) {
+    return (
+      <div className="py-8 bg-gray-50 min-h-screen">
+        <div className="container mx-auto px-4">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900">Job not found</h2>
+            <p className="mt-2 text-gray-600">
+              The job you're looking for doesn't exist.
+            </p>
+            <Link
+              to="/jobs"
+              className="mt-4 inline-block text-blue-600 hover:text-blue-800"
+            >
+              Back to Jobs
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-8 bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-4">
+        <Link
+          to="/jobs"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6"
+        >
+          <FaArrowLeft className="mr-2" /> Back to Jobs
+        </Link>
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          {/* Job Header */}
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {job.title}
+            </h1>
+            <p className="text-xl text-gray-700 mb-4">{job.company}</p>
+
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+              <div className="flex items-center">
+                <FaMapMarkerAlt className="mr-1 text-gray-500" />
+                <span>{job.location}</span>
+              </div>
+              <div className="flex items-center">
+                <FaBriefcase className="mr-1 text-gray-500" />
+                <span>{job.type}</span>
+              </div>
+              <div className="flex items-center">
+                <FaDollarSign className="mr-1 text-gray-500" />
+                <span>{job.salary}</span>
+              </div>
+              <div className="flex items-center">
+                <FaClock className="mr-1 text-gray-500" />
+                <span>Posted {job.posted}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleApplyClick}
+              className="mt-4 bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              {isAuthenticated && hasUserApplied(user?.email, parseInt(id))
+                ? "Already Applied"
+                : "Apply Now"}
+            </button>
+          </div>
+
+          {/* Job Details */}
+          <div className="p-6">
+            <div className="prose max-w-none">
+              <h2 className="text-xl font-semibold mb-4">Job Description</h2>
+              <p className="mb-6">{job.description}</p>
+
+              <h3 className="text-lg font-semibold mb-3">Requirements</h3>
+              <ul className="list-disc pl-5 mb-6 space-y-2">
+                {job.requirements &&
+                  job.requirements
+                    .split(",")
+                    .map((req, index) => <li key={index}>{req.trim()}</li>)}
+              </ul>
+
+              <h3 className="text-lg font-semibold mb-3">Responsibilities</h3>
+              <ul className="list-disc pl-5 mb-6 space-y-2">
+                {job.responsibilities &&
+                  job.responsibilities
+                    .split(",")
+                    .map((resp, index) => <li key={index}>{resp.trim()}</li>)}
+              </ul>
+
+              <h3 className="text-lg font-semibold mb-3">Benefits</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                {job.benefits &&
+                  job.benefits
+                    .split(",")
+                    .map((benefit, index) => (
+                      <li key={index}>{benefit.trim()}</li>
+                    ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Application Modal */}
+        {showApplicationModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Apply for {job.title}
+                </h3>
+                <button
+                  onClick={() => setShowApplicationModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitApplication} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={applicationData.fullName}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.fullName ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="John Doe"
+                    />
+                    {errors.fullName && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.fullName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={applicationData.email}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.email ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="john@example.com"
+                    />
+                    {errors.email && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={applicationData.phone}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.phone ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="+1 (555) 123-4567"
+                    />
+                    {errors.phone && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Experience *
+                    </label>
+                    <input
+                      type="text"
+                      name="experience"
+                      value={applicationData.experience}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.experience ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="e.g. 3 years of frontend development"
+                    />
+                    {errors.experience && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.experience}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Education *
+                    </label>
+                    <input
+                      type="text"
+                      name="education"
+                      value={applicationData.education}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.education ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="e.g. Bachelor's in Computer Science"
+                    />
+                    {errors.education && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.education}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Skills *
+                    </label>
+                    <input
+                      type="text"
+                      name="skills"
+                      value={applicationData.skills}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.skills ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="e.g. React, JavaScript, CSS"
+                    />
+                    {errors.skills && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.skills}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cover Letter *
+                  </label>
+                  <textarea
+                    name="coverLetter"
+                    value={applicationData.coverLetter}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.coverLetter ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Tell us why you're interested in this position..."
+                  />
+                  {errors.coverLetter && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.coverLetter}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Resume *
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.resume ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  {errors.resume && (
+                    <p className="mt-1 text-sm text-red-600">{errors.resume}</p>
+                  )}
+                  {applicationData.resume && (
+                    <p className="mt-1 text-sm text-gray-600">
+                      Selected: {applicationData.resume.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowApplicationModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Submit Application
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default JobDetailPage;
