@@ -23,11 +23,14 @@ import {
 } from "react-icons/fi";
 import useAuth from "../hooks/useAuth";
 import { useApplications } from "../context/ApplicationContext";
+import { useJobs } from "../context/JobContext";
 
 const UserDashboard = () => {
   const { user } = useAuth();
   const { getUserApplications } = useApplications();
+  const { getPublishedJobs } = useJobs();
   const userApplications = getUserApplications(user?.email);
+  const publishedJobs = getPublishedJobs();
   const [activeTab, setActiveTab] = useState("overview");
   const [savedJobs, setSavedJobs] = useState(() => {
     const savedJobsFromStorage = JSON.parse(
@@ -363,6 +366,55 @@ const UserDashboard = () => {
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Browse Jobs */}
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Browse Jobs
+                </h2>
+                <Link
+                  to="/jobs"
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  View All
+                </Link>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {publishedJobs.slice(0, 3).map((job) => (
+                  <Link key={job.id} to={`/jobs/${job.id}`} className="block">
+                    <div className="px-6 py-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <h3 className="text-sm font-medium text-gray-900">
+                              {job.title}
+                            </h3>
+                            <span className="ml-3 text-sm text-gray-500">
+                              at {job.company}
+                            </span>
+                          </div>
+                          <div className="flex items-center mt-1 text-sm text-gray-500">
+                            <FiMapPin className="h-3 w-3 mr-1" />
+                            {job.location}
+                            <span className="mx-2">•</span>
+                            <FiBriefcase className="h-3 w-3 mr-1" />
+                            {job.type}
+                            <span className="mx-2">•</span>
+                            <FiDollarSign className="h-3 w-3 mr-1" />
+                            {job.salary}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          <FiClock className="inline h-3 w-3 mr-1" />
+                          {job.posted}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
