@@ -4,13 +4,19 @@ import {
   FaBriefcase,
   FaBuilding,
   FaMapMarkerAlt,
+  FaClock,
+  FaDollarSign,
 } from "react-icons/fa";
+import { useJobs } from "../context/JobContext";
 
 const HomePage = () => {
+  const { getPublishedJobs } = useJobs();
+  const publishedJobs = getPublishedJobs();
+  const recentJobs = publishedJobs.slice(0, 6); // Show latest 6 jobs
   return (
     <div>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white pt-12 pb-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Find Your Dream Job Today
@@ -41,6 +47,77 @@ const HomePage = () => {
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded transition-colors">
               Search Jobs
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent Jobs Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-3xl font-bold">Recent Job Postings</h2>
+            <Link
+              to="/jobs"
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View All Jobs →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentJobs.length > 0 ? (
+              recentJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  to={`/jobs/${job.id}`}
+                  className="block bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                >
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {job.title}
+                    </h3>
+                    <p className="text-gray-600 font-medium">{job.company}</p>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <FaMapMarkerAlt className="mr-2" />
+                      {job.location}
+                    </div>
+                    <div className="flex items-center">
+                      <FaBriefcase className="mr-2" />
+                      {job.type}
+                    </div>
+                    {job.salary && (
+                      <div className="flex items-center">
+                        <FaDollarSign className="mr-2" />
+                        {job.salary}
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <FaClock className="mr-2" />
+                      {job.posted || "Recently posted"}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <FaBriefcase className="text-gray-300 text-5xl mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">
+                  No jobs posted yet
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Be the first to post a job opportunity!
+                </p>
+                <Link
+                  to="/admin/add-job"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Post a Job
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>

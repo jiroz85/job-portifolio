@@ -1,13 +1,18 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaBriefcase } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
+import NotificationDropdown from "../Notifications/NotificationDropdown";
 
 const Navbar = () => {
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isUserDashboard = location.pathname === "/dashboard";
+  // Show Home and Browse Jobs on home, login, and register pages
+  const showHomeNav =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register";
 
   const handleLogout = () => {
     logout();
@@ -26,7 +31,7 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
-            {!isUserDashboard && (
+            {showHomeNav && (
               <>
                 <Link to="/" className="nav-link">
                   Home
@@ -38,14 +43,13 @@ const Navbar = () => {
             )}
             {isAuthenticated ? (
               <>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
+                <NotificationDropdown />
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>

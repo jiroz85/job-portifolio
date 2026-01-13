@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiSearch,
   FiEdit2,
@@ -8,70 +8,41 @@ import {
   FiX,
   FiShield,
   FiUser,
+  FiMail,
+  FiPhone,
+  FiCalendar,
+  FiMapPin,
+  FiFilter,
+  FiChevronDown,
+  FiUserPlus,
+  FiUserX,
 } from "react-icons/fi";
+import { useUsers } from "../../context/UserContext";
 
 const UsersManagement = () => {
+  const {
+    getAllUsers,
+    getUserById,
+    getUserActivity,
+    updateUserRole,
+    updateUserStatus,
+    deleteUser,
+  } = useUsers();
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [newRole, setNewRole] = useState("");
+  const [newStatus, setNewStatus] = useState("");
+  const [userDetails, setUserDetails] = useState(null);
+  const [userActivity, setUserActivity] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      role: "Admin",
-      status: "Active",
-      joinDate: "2024-01-15",
-      lastActive: "2024-01-20",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "User",
-      status: "Active",
-      joinDate: "2024-01-14",
-      lastActive: "2024-01-19",
-    },
-    {
-      id: 3,
-      name: "Bob Johnson",
-      email: "bob@example.com",
-      role: "User",
-      status: "Blocked",
-      joinDate: "2024-01-13",
-      lastActive: "2024-01-18",
-    },
-    {
-      id: 4,
-      name: "Alice Brown",
-      email: "alice@example.com",
-      role: "User",
-      status: "Active",
-      joinDate: "2024-01-12",
-      lastActive: "2024-01-20",
-    },
-    {
-      id: 5,
-      name: "Charlie Wilson",
-      email: "charlie@example.com",
-      role: "Moderator",
-      status: "Active",
-      joinDate: "2024-01-11",
-      lastActive: "2024-01-19",
-    },
-    {
-      id: 6,
-      name: "Diana Prince",
-      email: "diana@example.com",
-      role: "User",
-      status: "Blocked",
-      joinDate: "2024-01-10",
-      lastActive: "2024-01-15",
-    },
-  ]);
+  const users = getAllUsers();
 
   const getStatusColor = (status) => {
     return status === "Active"

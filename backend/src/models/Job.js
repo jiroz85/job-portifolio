@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+const { sequelize } = require("../config/database");
 
 const Job = sequelize.define(
   "Job",
@@ -23,6 +23,30 @@ const Job = sequelize.define(
     requirements: {
       type: DataTypes.TEXT,
       allowNull: false,
+    },
+    responsibilities: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    education: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    benefits: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    applicationDeadline: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    contactEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    contactPhone: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     salary: {
       type: DataTypes.STRING,
@@ -53,8 +77,19 @@ const Job = sequelize.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM("active", "inactive", "filled"),
+      type: DataTypes.ENUM(
+        "active",
+        "inactive",
+        "filled",
+        "Draft",
+        "Published",
+        "Closed"
+      ),
       defaultValue: "active",
+    },
+    approvalStatus: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+      defaultValue: "approved",
     },
   },
   {

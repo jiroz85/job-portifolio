@@ -1,5 +1,5 @@
 require("dotenv").config();
-const db = require("../config/database");
+const { sequelize, createDatabaseIfNotExists } = require("../config/database");
 const Job = require("../models/Job");
 
 const sampleJobs = [
@@ -14,7 +14,8 @@ const sampleJobs = [
     type: "Full-time",
     experience: "Mid Level",
     skills: "React,JavaScript,CSS,HTML",
-    status: "active",
+    status: "Published",
+    approvalStatus: "approved",
   },
   {
     title: "Backend Developer",
@@ -27,7 +28,8 @@ const sampleJobs = [
     type: "Full-time",
     experience: "Senior Level",
     skills: "Node.js,Express,SQL,API Development",
-    status: "active",
+    status: "Published",
+    approvalStatus: "approved",
   },
   {
     title: "UI/UX Designer",
@@ -39,19 +41,29 @@ const sampleJobs = [
     type: "Full-time",
     experience: "Mid Level",
     skills: "Figma,Sketch,UI/UX,Prototyping",
-    status: "active",
+    status: "Published",
+    approvalStatus: "approved",
   },
 ];
 
 const seedDatabase = async () => {
   try {
-    // Sync all models
-    await db.sync({ force: true }); // This will drop and recreate tables
+    // Create database if it doesn't exist
+    await createDatabaseIfNotExists();
 
-    // Create sample jobs
-    await Job.bulkCreate(sampleJobs);
+    // Connect to database and sync models
+    await sequelize.authenticate();
+    await sequelize.sync({ alter: true });
 
-    console.log("Database seeded successfully!");
+    // Check if jobs already exist
+    const existingJobs = await Job.count();
+    if (existingJobs === 0) {
+      // Create sample jobs only if table is empty
+      await Job.bulkCreate(sampleJobs);
+      console.log("Database seeded successfully!");
+    } else {
+      console.log("Database already contains jobs. Skipping seeding.");
+    }
     process.exit(0);
   } catch (error) {
     console.error("Error seeding database:", error);

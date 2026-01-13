@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { jobService } from "../services/jobService";
 
 const JobContext = createContext();
 
@@ -11,124 +12,107 @@ export const useJobs = () => {
 };
 
 export const JobProvider = ({ children }) => {
-  const [jobs, setJobs] = useState(() => {
-    // Initialize with existing jobs from localStorage or default mock data
-    const savedJobs = localStorage.getItem("jobs");
-    if (savedJobs) {
-      const parsedJobs = JSON.parse(savedJobs);
-      // Update all existing jobs to have Published and approved status
-      return parsedJobs.map((job) => ({
-        ...job,
-        status: "Published",
-        approvalStatus: "approved",
-      }));
-    }
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // Default mock data matching the existing JobsManagement data
-    return [
-      {
-        id: 1,
-        title: "Senior React Developer",
-        company: "Tech Corp",
-        location: "San Francisco, CA",
-        type: "Full-time",
-        status: "Published",
-        description: "We are looking for an experienced React developer...",
-        requirements: "5+ years of React experience",
-        salary: "$120k - $180k",
-        createdAt: "2024-01-15",
-        approvalStatus: "approved",
-        experience: "Senior Level",
-        posted: "2 days ago",
-      },
-      {
-        id: 2,
-        title: "Frontend Developer",
-        company: "StartupXYZ",
-        location: "Remote",
-        type: "Full-time",
-        status: "Published",
-        description: "Join our frontend team...",
-        requirements: "3+ years of frontend experience",
-        salary: "$80k - $120k",
-        createdAt: "2024-01-14",
-        approvalStatus: "approved",
-        experience: "Mid Level",
-        posted: "1 week ago",
-      },
-      {
-        id: 3,
-        title: "UI/UX Designer",
-        company: "Design Studio",
-        location: "New York, NY",
-        type: "Contract",
-        status: "Published",
-        description: "Creative designer needed...",
-        requirements: "Portfolio required",
-        salary: "$60k - $90k",
-        createdAt: "2024-01-13",
-        approvalStatus: "approved",
-        experience: "Mid Level",
-        posted: "3 days ago",
-      },
-      {
-        id: 4,
-        title: "Full Stack Developer",
-        company: "Tech Solutions Inc",
-        location: "Austin, TX",
-        type: "Full-time",
-        status: "Published",
-        description: "Full stack position available...",
-        requirements: "Full stack development experience",
-        salary: "$100k - $150k",
-        createdAt: "2024-01-12",
-        approvalStatus: "approved",
-        experience: "Senior Level",
-        posted: "1 week ago",
-      },
-    ];
-  });
-
-  // Save jobs to localStorage whenever they change
+  // Fetch jobs from API on component mount
   useEffect(() => {
-    localStorage.setItem("jobs", JSON.stringify(jobs));
-  }, [jobs]);
+    fetchJobs();
+
+    // Set up periodic refresh every 30 seconds to sync with database
+    const interval = setInterval(fetchJobs, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getAllJobs();
+      setJobs(response.data || response);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching jobs:", err);
+      setError("Failed to fetch jobs");
+      // Don't use fallback data - only show real database data
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Add a new job
-  const addJob = (jobData) => {
-    const newJob = {
-      id: jobs.length > 0 ? Math.max(...jobs.map((job) => job.id)) + 1 : 1,
-      ...jobData,
-      createdAt: new Date().toISOString().split("T")[0],
-      approvalStatus: "approved",
-      posted: "Just posted",
-    };
-    setJobs([...jobs, newJob]);
-    return newJob;
+  const addJob = async (jobData) => {
+    try {
+      const response = await jobService.createJob(jobData);
+      const newJob = response.data || response;
+      // Refresh the entire jobs list from database
+      await fetchJobs();
+      return { success: true, data: newJob };
+    } catch (err) {
+      console.error("Error adding job:", err);
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to add job";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
   };
 
   // Update an existing job
-  const updateJob = (jobId, jobData) => {
-    setJobs(
-      jobs.map((job) => (job.id === jobId ? { ...job, ...jobData } : job))
-    );
+  const updateJob = async (jobId, jobData) => {
+    try {
+      const response = await jobService.updateJob(jobId, jobData);
+      const updatedJob = response.data || response;
+      // Refresh the entire jobs list from database
+      await fetchJobs();
+      return { success: true, data: updatedJob };
+    } catch (err) {
+      console.error("Error updating job:", err);
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to update job";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
   };
 
   // Delete a job
-  const deleteJob = (jobId) => {
-    setJobs(jobs.filter((job) => job.id !== jobId));
+  const deleteJob = async (jobId) => {
+    try {
+      await jobService.deleteJob(jobId);
+      // Refresh the entire jobs list from database
+      await fetchJobs();
+      return { success: true };
+    } catch (err) {
+      console.error("Error deleting job:", err);
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to delete job";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
   };
 
   // Get published jobs (for Browse Jobs page)
   const getPublishedJobs = () => {
     return jobs.filter(
-      (job) => job.status === "Published" && job.approvalStatus === "approved"
+      (job) =>
+        (job.status === "Published" || job.status === "active") &&
+        (job.approvalStatus === "approved" || !job.approvalStatus)
     );
   };
 
   // Get all jobs (for admin management)
   const getAllJobs = () => {
     return jobs;
+  };
+
+  // Get all active jobs (for general display across the app)
+  const getActiveJobs = () => {
+    return jobs.filter(
+      (job) =>
+        (job.status === "Published" || job.status === "active") &&
+        (job.approvalStatus === "approved" || !job.approvalStatus)
+    );
   };
 
   // Approve a job
@@ -149,13 +133,17 @@ export const JobProvider = ({ children }) => {
 
   const value = {
     jobs,
+    loading,
+    error,
     addJob,
     updateJob,
     deleteJob,
     getPublishedJobs,
     getAllJobs,
+    getActiveJobs,
     approveJob,
     rejectJob,
+    fetchJobs,
   };
 
   return <JobContext.Provider value={value}>{children}</JobContext.Provider>;

@@ -9,13 +9,24 @@ import {
   FiClock,
   FiActivity,
   FiBarChart2,
+  FiUserCheck,
+  FiUserX,
+  FiUserPlus,
 } from "react-icons/fi";
+import { useUsers } from "../../context/UserContext";
+import { useJobs } from "../../context/JobContext";
+import { useApplications } from "../../context/ApplicationContext";
 
 const Dashboard = () => {
+  const { getUserStatistics, fetchUserStats } = useUsers();
+  const { getAllJobs } = useJobs();
+  const { getAllApplications } = useApplications();
+  const userStats = getUserStatistics();
+
   const [stats, setStats] = useState([
     {
       title: "Total Jobs",
-      value: "24",
+      value: "0",
       change: "+12%",
       changeType: "increase",
       icon: FiBriefcase,
@@ -23,7 +34,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Applications",
-      value: "156",
+      value: "0",
       change: "+23%",
       changeType: "increase",
       icon: FiFileText,
@@ -31,7 +42,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Users",
-      value: "89",
+      value: "0",
       change: "+5%",
       changeType: "increase",
       icon: FiUsers,
@@ -39,7 +50,7 @@ const Dashboard = () => {
     },
     {
       title: "Active Jobs",
-      value: "18",
+      value: "0",
       change: "-2%",
       changeType: "decrease",
       icon: FiTrendingUp,
@@ -86,23 +97,64 @@ const Dashboard = () => {
   ]);
 
   useEffect(() => {
+    // Load real data from contexts
+    const loadData = () => {
+      try {
+        const userStats = getUserStatistics();
+        const jobs = getAllJobs();
+        const applications = getAllApplications();
+
+        // Update stats with real data
+        setStats([
+          {
+            title: "Total Jobs",
+            value: jobs.length.toString(),
+            change: "+12%",
+            changeType: "increase",
+            icon: FiBriefcase,
+            color: "bg-blue-500",
+          },
+          {
+            title: "Total Applications",
+            value: applications.length.toString(),
+            change: "+23%",
+            changeType: "increase",
+            icon: FiFileText,
+            color: "bg-green-500",
+          },
+          {
+            title: "Total Users",
+            value: userStats?.totalUsers?.toString() || "0",
+            change: "+5%",
+            changeType: "increase",
+            icon: FiUsers,
+            color: "bg-purple-500",
+          },
+          {
+            title: "Active Jobs",
+            value: jobs
+              .filter((job) => job.status === "Published")
+              .length.toString(),
+            change: "-2%",
+            changeType: "decrease",
+            icon: FiTrendingUp,
+            color: "bg-orange-500",
+          },
+        ]);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      }
+    };
+
+    loadData();
+
     // Simulate real-time data updates
     const interval = setInterval(() => {
-      // Update stats with random variations
-      setStats((prevStats) =>
-        prevStats.map((stat) => ({
-          ...stat,
-          value: parseInt(stat.value) + Math.floor(Math.random() * 3) - 1,
-          change: `${Math.random() > 0.5 ? "+" : "-"}${Math.floor(
-            Math.random() * 20
-          )}%`,
-          changeType: Math.random() > 0.5 ? "increase" : "decrease",
-        }))
-      );
+      loadData();
     }, 30000); // Update every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [getUserStatistics, getAllJobs, getAllApplications]);
 
   const quickActions = [
     {
@@ -275,6 +327,67 @@ const Dashboard = () => {
                       <FiActivity className="mr-1" />
                       Healthy
                     </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* User Statistics */}
+          <div className="bg-white rounded-lg shadow mt-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <FiUsers className="mr-2" />
+                User Statistics
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <FiUserCheck className="w-4 h-4 text-green-600 mr-2" />
+                    <span className="text-sm text-gray-600">Active Users</span>
+                  </div>
+                  <span className="text-sm font-semibold text-green-600">
+                    {userStats?.activeUsers || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <FiUserX className="w-4 h-4 text-red-600 mr-2" />
+                    <span className="text-sm text-gray-600">Blocked Users</span>
+                  </div>
+                  <span className="text-sm font-semibold text-red-600">
+                    {userStats?.blockedUsers || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <FiUserPlus className="w-4 h-4 text-blue-600 mr-2" />
+                    <span className="text-sm text-gray-600">New This Week</span>
+                  </div>
+                  <span className="text-sm font-semibold text-blue-600">
+                    +8
+                  </span>
+                </div>
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="text-xs text-gray-500">
+                    User Roles Distribution
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {userStats?.roleStats?.map((role, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-xs text-gray-600 capitalize">
+                          {role.role}s
+                        </span>
+                        <span className="text-xs font-semibold text-gray-900">
+                          {role.count}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

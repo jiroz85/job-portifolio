@@ -16,26 +16,64 @@ exports.getJobs = async (req, res) => {
     } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = { status: "active" };
+    const whereClause = {
+      [Op.or]: [{ status: "Published" }, { status: "active" }],
+    };
 
     if (search) {
-      whereClause[Op.or] = [
-        { title: { [Op.like]: `%${search}%` } },
-        { company: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
+      whereClause[Op.and] = [
+        {
+          [Op.or]: [{ status: "Published" }, { status: "active" }],
+        },
+        {
+          [Op.or]: [
+            { title: { [Op.like]: `%${search}%` } },
+            { company: { [Op.like]: `%${search}%` } },
+            { description: { [Op.like]: `%${search}%` } },
+          ],
+        },
       ];
+    } else {
+      whereClause[Op.or] = [{ status: "Published" }, { status: "active" }];
     }
 
     if (location) {
-      whereClause.location = { [Op.like]: `%${location}%` };
+      if (whereClause[Op.and]) {
+        whereClause[Op.and].push({ location: { [Op.like]: `%${location}%` } });
+      } else {
+        whereClause[Op.and] = [
+          {
+            [Op.or]: [{ status: "Published" }, { status: "active" }],
+          },
+          { location: { [Op.like]: `%${location}%` } },
+        ];
+      }
     }
 
     if (type) {
-      whereClause.type = type;
+      if (whereClause[Op.and]) {
+        whereClause[Op.and].push({ type: type });
+      } else {
+        whereClause[Op.and] = [
+          {
+            [Op.or]: [{ status: "Published" }, { status: "active" }],
+          },
+          { type: type },
+        ];
+      }
     }
 
     if (experience) {
-      whereClause.experience = experience;
+      if (whereClause[Op.and]) {
+        whereClause[Op.and].push({ experience: experience });
+      } else {
+        whereClause[Op.and] = [
+          {
+            [Op.or]: [{ status: "Published" }, { status: "active" }],
+          },
+          { experience: experience },
+        ];
+      }
     }
 
     const { count, rows: jobs } = await Job.findAndCountAll({

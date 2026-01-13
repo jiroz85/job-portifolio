@@ -24,20 +24,26 @@ import {
 import useAuth from "../hooks/useAuth";
 import { useApplications } from "../context/ApplicationContext";
 import { useJobs } from "../context/JobContext";
+import { useSavedJobs } from "../context/SavedJobsContext";
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { getUserApplications } = useApplications();
+  const { getUserApplications, getApplicationStatusOptions } =
+    useApplications();
   const { getPublishedJobs } = useJobs();
+  const {
+    savedJobs,
+    savedCompanies,
+    saveJob,
+    unsaveJob,
+    isJobSaved,
+    getSavedJobsCount,
+    getSavedCompaniesCount,
+  } = useSavedJobs();
+
   const userApplications = getUserApplications(user?.email);
   const publishedJobs = getPublishedJobs();
   const [activeTab, setActiveTab] = useState("overview");
-  const [savedJobs, setSavedJobs] = useState(() => {
-    const savedJobsFromStorage = JSON.parse(
-      localStorage.getItem("savedJobs") || "[]"
-    );
-    return savedJobsFromStorage;
-  });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [profileCompletion] = useState(75);
@@ -108,27 +114,22 @@ const UserDashboard = () => {
   ];
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "applied":
-        return "bg-blue-100 text-blue-800";
-      case "interview":
-        return "bg-yellow-100 text-yellow-800";
-      case "offer":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    const statusOptions = getApplicationStatusOptions();
+    const statusOption = statusOptions.find((opt) => opt.value === status);
+    return statusOption
+      ? `bg-${statusOption.color}-100 text-${statusOption.color}-800`
+      : "bg-gray-100 text-gray-800";
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case "applied":
         return <FiClock className="h-4 w-4" />;
-      case "interview":
-        return <FiUser className="h-4 w-4" />;
-      case "offer":
+      case "viewed":
+        return <FiEye className="h-4 w-4" />;
+      case "shortlisted":
+        return <FiStar className="h-4 w-4" />;
+      case "offered":
         return <FiCheckCircle className="h-4 w-4" />;
       case "rejected":
         return <FiXCircle className="h-4 w-4" />;
@@ -144,10 +145,11 @@ const UserDashboard = () => {
     },
     {
       applied: 0,
-      interviews: 0,
-      offers: 0,
+      viewed: 0,
+      shortlisted: 0,
+      offered: 0,
       rejected: 0,
-      saved: savedJobs.length,
+      saved: getSavedJobsCount(),
     }
   );
 
@@ -160,20 +162,14 @@ const UserDashboard = () => {
   });
 
   const handleSaveJob = (jobId) => {
-    const updatedSavedJobs = [...savedJobs];
-    const jobIndex = updatedSavedJobs.findIndex((job) => job.id === jobId);
-
-    if (jobIndex > -1) {
-      updatedSavedJobs.splice(jobIndex, 1);
-    } else {
-      const jobToSave = mockSavedJobs.find((job) => job.id === jobId);
-      if (jobToSave) {
-        updatedSavedJobs.push(jobToSave);
+    const job = publishedJobs.find((j) => j.id === jobId);
+    if (job) {
+      if (isJobSaved(jobId)) {
+        unsaveJob(jobId);
+      } else {
+        saveJob(job);
       }
     }
-
-    setSavedJobs(updatedSavedJobs);
-    localStorage.setItem("savedJobs", JSON.stringify(updatedSavedJobs));
   };
 
   const handleUploadResume = (event) => {
@@ -185,7 +181,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
         <div className="mb-8">

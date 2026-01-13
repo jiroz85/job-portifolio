@@ -9,13 +9,12 @@ import {
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useJobs } from "../context/JobContext";
-import { useApplications } from "../context/ApplicationContext";
 import { useAuth } from "../context/AuthContext";
+import { applicationService } from "../services/applicationService";
 
 const JobDetailPage = () => {
   const { id } = useParams();
   const { getPublishedJobs } = useJobs();
-  const { submitApplication, hasUserApplied } = useApplications();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -46,11 +45,7 @@ const JobDetailPage = () => {
       return;
     }
 
-    if (hasUserApplied(user.email, parseInt(id))) {
-      alert("You have already applied for this job!");
-      return;
-    }
-
+    // Simple check - in real app this would be an API call
     setShowApplicationModal(true);
   };
 
@@ -100,36 +95,47 @@ const JobDetailPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmitApplication = (e) => {
+  const handleSubmitApplication = async (e) => {
     e.preventDefault();
     if (validateApplication()) {
-      const application = {
-        jobId: parseInt(id),
-        jobTitle: job.title,
-        company: job.company,
-        applicantName: applicationData.fullName,
-        email: applicationData.email,
-        phone: applicationData.phone,
-        experience: applicationData.experience,
-        education: applicationData.education,
-        skills: applicationData.skills,
-        coverLetter: applicationData.coverLetter,
-        resume: applicationData.resume?.name || "resume.pdf",
-      };
+      try {
+        // Prepare application data to match backend API
+        const applicationPayload = {
+          jobId: parseInt(id),
+          applicantName: applicationData.fullName,
+          applicantEmail: applicationData.email,
+          applicantPhone: applicationData.phone,
+          experience: applicationData.experience,
+          education: applicationData.education,
+          skills: applicationData.skills,
+          coverLetter: applicationData.coverLetter,
+        };
 
-      submitApplication(application);
-      alert("Application submitted successfully!");
-      setShowApplicationModal(false);
-      setApplicationData({
-        fullName: "",
-        email: user?.email || "",
-        phone: "",
-        experience: "",
-        education: "",
-        skills: "",
-        coverLetter: "",
-        resume: null,
-      });
+        // Call the actual API
+        const response = await applicationService.submitApplication(
+          applicationPayload
+        );
+
+        if (response.success) {
+          alert("Application submitted successfully!");
+          setShowApplicationModal(false);
+          setApplicationData({
+            fullName: "",
+            email: user?.email || "",
+            phone: "",
+            experience: "",
+            education: "",
+            skills: "",
+            coverLetter: "",
+            resume: null,
+          });
+        } else {
+          throw new Error(response.error || "Failed to submit application");
+        }
+      } catch (error) {
+        console.error("Error submitting application:", error);
+        alert(`Error submitting application: ${error.message}`);
+      }
     }
   };
 
@@ -195,9 +201,7 @@ const JobDetailPage = () => {
               onClick={handleApplyClick}
               className="mt-4 bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
             >
-              {isAuthenticated && hasUserApplied(user?.email, parseInt(id))
-                ? "Already Applied"
-                : "Apply Now"}
+              Apply Now
             </button>
           </div>
 

@@ -24,7 +24,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem("token");
-      if (storedToken) {
+      const storedUser = localStorage.getItem("user");
+
+      if (storedToken && storedUser) {
         setToken(storedToken);
         setAuthToken(storedToken);
         try {
@@ -33,15 +35,9 @@ export const AuthProvider = ({ children }) => {
           // const response = await axios.get("/api/auth/me");
           // setUser(response.data.user);
 
-          // For demo purposes, set a mock admin user if token exists
-          // This ensures users can access the admin area for demo purposes
-          const mockUser = {
-            id: 1,
-            name: "Admin User",
-            email: "admin@example.com",
-            role: "admin",
-          };
-          setUser(mockUser);
+          // Use stored user data from localStorage
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
         } catch (err) {
           console.error("Authentication check failed:", err);
           logout();
@@ -54,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Login user
-  const login = async (email, password) => {
+  const login = async (email, _password) => {
     setLoading(true);
     setError(null);
     try {
@@ -70,25 +66,53 @@ export const AuthProvider = ({ children }) => {
         // Add more admin emails here as needed
       ];
 
+      // Employer emails - add employer emails here
+      const employerEmails = [
+        "employer@example.com",
+        "hr@techcorp.com",
+        "recruiter@company.com",
+        // Add more employer emails here as needed
+      ];
+
       const isAdminUser =
         adminEmails.includes(email) || email.includes("admin");
+      const isEmployerUser =
+        employerEmails.includes(email) ||
+        email.includes("employer") ||
+        email.includes("hr") ||
+        email.includes("recruiter");
+
+      let userRole = "user";
+      if (isAdminUser) userRole = "admin";
+      else if (isEmployerUser) userRole = "employer";
+
       const mockUser = {
-        id: isAdminUser ? 1 : 2,
-        name: isAdminUser ? "Admin User" : "Regular User",
+        id: isAdminUser ? 1 : isEmployerUser ? 3 : 2,
+        name: isAdminUser
+          ? "Admin User"
+          : isEmployerUser
+          ? "Employer User"
+          : "Regular User",
         email: email,
-        role: isAdminUser ? "admin" : "user",
+        role: userRole,
       };
 
       const mockToken = "mock-jwt-token-" + Date.now();
 
-      // Save token to localStorage
+      // Save token and user data to localStorage
       localStorage.setItem("token", mockToken);
+      localStorage.setItem("user", JSON.stringify(mockUser));
       setToken(mockToken);
       setAuthToken(mockToken);
       setUser(mockUser);
 
       // Redirect based on user role
-      const redirectPath = mockUser.role === "admin" ? "/admin" : "/dashboard";
+      const redirectPath =
+        mockUser.role === "admin"
+          ? "/admin"
+          : mockUser.role === "employer"
+          ? "/employer"
+          : "/dashboard";
       navigate(redirectPath);
       return { success: true };
     } catch (err) {
@@ -120,23 +144,48 @@ export const AuthProvider = ({ children }) => {
         "john.doe@example.com", // Added for your use
         // Add more admin emails here as needed
       ];
+
+      // Employer emails - add employer emails here
+      const employerEmails = [
+        "employer@example.com",
+        "hr@techcorp.com",
+        "recruiter@company.com",
+        // Add more employer emails here as needed
+      ];
+
       const isAdminUser =
         adminEmails.includes(userData.email) ||
         userData.email.includes("admin");
+      const isEmployerUser =
+        employerEmails.includes(userData.email) ||
+        userData.email.includes("employer") ||
+        userData.email.includes("hr") ||
+        userData.email.includes("recruiter");
+
+      let userRole = "user";
+      if (isAdminUser) userRole = "admin";
+      else if (isEmployerUser) userRole = "employer";
+
       const mockUser = {
-        id: isAdminUser ? 1 : 2,
+        id: isAdminUser ? 1 : isEmployerUser ? 3 : 2,
         name: userData.name || "New User",
         email: userData.email,
-        role: isAdminUser ? "admin" : "user",
+        role: userRole,
       };
 
       localStorage.setItem("token", mockToken);
+      localStorage.setItem("user", JSON.stringify(mockUser));
       setToken(mockToken);
       setAuthToken(mockToken);
       setUser(mockUser);
 
       // Redirect based on user role
-      const redirectPath = mockUser.role === "admin" ? "/admin" : "/dashboard";
+      const redirectPath =
+        mockUser.role === "admin"
+          ? "/admin"
+          : mockUser.role === "employer"
+          ? "/employer"
+          : "/dashboard";
       navigate(redirectPath);
       return { success: true };
     } catch (err) {
@@ -152,6 +201,7 @@ export const AuthProvider = ({ children }) => {
   // Logout user
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     // Remove the Authorization header from axios
     delete axios.defaults.headers.common["Authorization"];
     setToken(null);

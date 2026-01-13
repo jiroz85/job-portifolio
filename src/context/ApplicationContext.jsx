@@ -32,18 +32,38 @@ export const ApplicationProvider = ({ children }) => {
           ? Math.max(...applications.map((app) => app.id)) + 1
           : 1,
       ...applicationData,
-      status: "pending",
+      status: "applied", // Initial status
       appliedDate: new Date().toISOString().split("T")[0],
+      statusHistory: [
+        {
+          status: "applied",
+          date: new Date().toISOString().split("T")[0],
+          note: "Application submitted successfully",
+        },
+      ],
     };
     setApplications([...applications, newApplication]);
     return newApplication;
   };
 
   // Update application status
-  const updateApplicationStatus = (applicationId, newStatus) => {
+  const updateApplicationStatus = (applicationId, newStatus, note = "") => {
     setApplications(
       applications.map((app) =>
-        app.id === applicationId ? { ...app, status: newStatus } : app
+        app.id === applicationId
+          ? {
+              ...app,
+              status: newStatus,
+              statusHistory: [
+                ...app.statusHistory,
+                {
+                  status: newStatus,
+                  date: new Date().toISOString().split("T")[0],
+                  note: note || `Status updated to ${newStatus}`,
+                },
+              ],
+            }
+          : app
       )
     );
   };
@@ -75,6 +95,17 @@ export const ApplicationProvider = ({ children }) => {
     );
   };
 
+  // Get status options for applications
+  const getApplicationStatusOptions = () => {
+    return [
+      { value: "applied", label: "Applied", color: "blue" },
+      { value: "viewed", label: "Viewed", color: "yellow" },
+      { value: "shortlisted", label: "Shortlisted", color: "purple" },
+      { value: "rejected", label: "Rejected", color: "red" },
+      { value: "offered", label: "Offered", color: "green" },
+    ];
+  };
+
   const value = {
     applications,
     submitApplication,
@@ -84,6 +115,7 @@ export const ApplicationProvider = ({ children }) => {
     getJobApplications,
     deleteApplication,
     hasUserApplied,
+    getApplicationStatusOptions,
   };
 
   return (

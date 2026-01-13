@@ -6,6 +6,9 @@ import {
   FiFileText,
   FiChevronRight,
   FiChevronDown,
+  FiBarChart2,
+  FiSettings,
+  FiBell,
 } from "react-icons/fi";
 import { useState } from "react";
 
@@ -13,6 +16,7 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
   const [dropdownOpen, setDropdownOpen] = useState({
     jobs: false,
     users: false,
+    reports: false,
   });
 
   const toggleDropdown = (menu) => {
@@ -100,8 +104,57 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
           </li>
 
           <li>
+            <button
+              onClick={() => toggleDropdown("users")}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-left text-gray-600 rounded-lg hover:bg-gray-100 focus:outline-none"
+            >
+              <div className="flex items-center">
+                <FiUsers className="w-5 h-5 mr-3" />
+                <span>User Management</span>
+              </div>
+              {dropdownOpen.users ? (
+                <FiChevronDown className="w-4 h-4" />
+              ) : (
+                <FiChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            {dropdownOpen.users && (
+              <ul className="mt-1 ml-8 space-y-1">
+                <li>
+                  <NavLink
+                    to="/admin/users"
+                    className={({ isActive }) =>
+                      `block px-3 py-2 text-sm rounded-md ${
+                        isActive
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    All Users
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/admin/employers"
+                    className={({ isActive }) =>
+                      `block px-3 py-2 text-sm rounded-md ${
+                        isActive
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`
+                    }
+                  >
+                    Employers
+                  </NavLink>
+                </li>
+              </ul>
+            )}
+          </li>
+
+          <li>
             <NavLink
-              to="/admin/users"
+              to="/admin/reports"
               className={({ isActive }) =>
                 `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isActive
@@ -110,8 +163,40 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
                 }`
               }
             >
-              <FiUsers className="w-5 h-5 mr-3" />
-              <span>User Management</span>
+              <FiBarChart2 className="w-5 h-5 mr-3" />
+              <span>Reports & Analytics</span>
+            </NavLink>
+          </li>
+
+          <li>
+            <NavLink
+              to="/admin/notifications"
+              className={({ isActive }) =>
+                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`
+              }
+            >
+              <FiBell className="w-5 h-5 mr-3" />
+              <span>Notifications</span>
+            </NavLink>
+          </li>
+
+          <li>
+            <NavLink
+              to="/admin/settings"
+              className={({ isActive }) =>
+                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`
+              }
+            >
+              <FiSettings className="w-5 h-5 mr-3" />
+              <span>System Settings</span>
             </NavLink>
           </li>
 

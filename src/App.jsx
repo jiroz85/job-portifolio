@@ -4,8 +4,12 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "./context/AuthContext";
 import { JobProvider } from "./context/JobContext";
 import { ApplicationProvider } from "./context/ApplicationContext";
+import { UserProvider } from "./context/UserContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import { SavedJobsProvider } from "./context/SavedJobsContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
+import EmployerRoute from "./components/auth/EmployerRoute";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import HomePage from "./pages/HomePage";
@@ -19,8 +23,19 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import JobsManagement from "./pages/admin/JobsManagement";
 import AddJob from "./pages/admin/AddJob";
-import UsersManagement from "./pages/admin/UsersManagement";
+import UsersManagement from "./pages/admin/UsersManagementEnhanced";
+import EmployerManagement from "./pages/admin/EmployerManagement";
 import ApplicationsManagement from "./pages/admin/ApplicationsManagement";
+import ReportsAnalytics from "./pages/admin/ReportsAnalytics";
+import SystemSettings from "./pages/admin/SystemSettings";
+import EmployerLayout from "./pages/employer/EmployerLayout";
+import EmployerDashboard from "./pages/employer/EmployerDashboard";
+import PostJob from "./pages/employer/PostJob";
+import ManageJobs from "./pages/employer/ManageJobs";
+import ApplicantTracking from "./pages/employer/ApplicantTracking";
+import InterviewManagement from "./pages/employer/InterviewManagement";
+import EmployerAnalytics from "./pages/employer/EmployerAnalytics";
+import EmployerSettings from "./pages/employer/EmployerSettings";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -37,52 +52,100 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
-          <JobProvider>
-            <ApplicationProvider>
-              <div className="flex flex-col min-h-screen">
-                <Navbar />
-                <main className="flex-grow">
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/jobs" element={<JobsPage />} />
-                    <Route path="/jobs/:id" element={<JobDetailPage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute>
-                          <UserDashboard />
-                        </ProtectedRoute>
-                      }
-                    />
+          <UserProvider>
+            <JobProvider>
+              <ApplicationProvider>
+                <NotificationProvider>
+                  <SavedJobsProvider>
+                    <div className="flex flex-col min-h-screen">
+                      <Navbar />
+                      <main>
+                        <Routes>
+                          <Route path="/" element={<HomePage />} />
+                          <Route path="/jobs" element={<JobsPage />} />
+                          <Route path="/jobs/:id" element={<JobDetailPage />} />
+                          <Route path="/login" element={<Login />} />
+                          <Route path="/register" element={<Register />} />
+                          <Route
+                            path="/dashboard"
+                            element={
+                              <ProtectedRoute>
+                                <UserDashboard />
+                              </ProtectedRoute>
+                            }
+                          />
 
-                    {/* Admin Routes - Protected and Admin Only */}
-                    <Route
-                      path="/admin"
-                      element={
-                        <AdminRoute>
-                          <AdminLayout />
-                        </AdminRoute>
-                      }
-                    >
-                      <Route index element={<Dashboard />} />
-                      <Route path="jobs" element={<JobsManagement />} />
-                      <Route path="jobs/add" element={<AddJob />} />
-                      <Route path="users" element={<UsersManagement />} />
-                      <Route
-                        path="applications"
-                        element={<ApplicationsManagement />}
-                      />
-                    </Route>
+                          {/* Admin Routes - Protected and Admin Only */}
+                          <Route
+                            path="/admin"
+                            element={
+                              <AdminRoute>
+                                <AdminLayout />
+                              </AdminRoute>
+                            }
+                          >
+                            <Route index element={<Dashboard />} />
+                            <Route path="jobs" element={<JobsManagement />} />
+                            <Route path="jobs/add" element={<AddJob />} />
+                            <Route path="users" element={<UsersManagement />} />
+                            <Route
+                              path="employers"
+                              element={<EmployerManagement />}
+                            />
+                            <Route
+                              path="applications"
+                              element={<ApplicationsManagement />}
+                            />
+                            <Route
+                              path="reports"
+                              element={<ReportsAnalytics />}
+                            />
+                            <Route
+                              path="settings"
+                              element={<SystemSettings />}
+                            />
+                          </Route>
 
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Routes>
-                </main>
-                <Footer />
-              </div>
-            </ApplicationProvider>
-          </JobProvider>
+                          {/* Employer Routes - Protected and Employer/Admin Only */}
+                          <Route
+                            path="/employer"
+                            element={
+                              <EmployerRoute>
+                                <EmployerLayout />
+                              </EmployerRoute>
+                            }
+                          >
+                            <Route index element={<EmployerDashboard />} />
+                            <Route path="post-job" element={<PostJob />} />
+                            <Route path="jobs" element={<ManageJobs />} />
+                            <Route
+                              path="applicants"
+                              element={<ApplicantTracking />}
+                            />
+                            <Route
+                              path="interviews"
+                              element={<InterviewManagement />}
+                            />
+                            <Route
+                              path="analytics"
+                              element={<EmployerAnalytics />}
+                            />
+                            <Route
+                              path="settings"
+                              element={<EmployerSettings />}
+                            />
+                          </Route>
+
+                          <Route path="*" element={<NotFoundPage />} />
+                        </Routes>
+                      </main>
+                      <Footer />
+                    </div>
+                  </SavedJobsProvider>
+                </NotificationProvider>
+              </ApplicationProvider>
+            </JobProvider>
+          </UserProvider>
         </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </Router>

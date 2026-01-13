@@ -17,25 +17,65 @@ const JobsPage = () => {
   const [filters, setFilters] = useState({
     type: "",
     experience: "",
+    salary: "",
+    skills: "",
   });
 
   // Filter published jobs based on search criteria
   const filteredJobs = publishedJobs.filter((job) => {
     const matchesSearch =
       job.title.toLowerCase().includes(search.toLowerCase()) ||
-      job.company.toLowerCase().includes(search.toLowerCase());
+      job.company.toLowerCase().includes(search.toLowerCase()) ||
+      (job.requirements &&
+        job.requirements.toLowerCase().includes(search.toLowerCase()));
     const matchesLocation = job.location
       .toLowerCase()
       .includes(location.toLowerCase());
     const matchesType = !filters.type || job.type === filters.type;
     const matchesExperience =
       !filters.experience || job.experience === filters.experience;
+    const matchesSalary =
+      !filters.salary || checkSalaryRange(job.salary, filters.salary);
+    const matchesSkills =
+      !filters.skills ||
+      (job.requirements &&
+        job.requirements.toLowerCase().includes(filters.skills.toLowerCase()));
 
-    return matchesSearch && matchesLocation && matchesType && matchesExperience;
+    return (
+      matchesSearch &&
+      matchesLocation &&
+      matchesType &&
+      matchesExperience &&
+      matchesSalary &&
+      matchesSkills
+    );
   });
 
+  // Helper function to check salary range
+  const checkSalaryRange = (jobSalary, filterSalary) => {
+    if (!jobSalary || !filterSalary) return true;
+
+    // Extract numeric values from salary strings
+    const jobSalaryMatch = jobSalary.match(/\$(\d+)k?/g);
+    if (!jobSalaryMatch) return true;
+
+    const jobMin =
+      parseInt(jobSalaryMatch[0].replace(/\$|k/g, "")) *
+      (jobSalaryMatch[0].includes("k") ? 1000 : 1);
+    const jobMax =
+      jobSalaryMatch.length > 1
+        ? parseInt(jobSalaryMatch[1].replace(/\$|k/g, "")) *
+          (jobSalaryMatch[1].includes("k") ? 1000 : 1)
+        : jobMin;
+
+    const filterMin = parseInt(filterSalary.split("-")[0]) * 1000;
+    const filterMax = parseInt(filterSalary.split("-")[1]) * 1000;
+
+    return jobMin >= filterMin && jobMax <= filterMax;
+  };
+
   return (
-    <div className="py-8 bg-gray-50 min-h-screen">
+    <div className="pb-8 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4">
         {/* Search and Filter Section */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -80,6 +120,7 @@ const JobsPage = () => {
               <option value="Part-time">Part-time</option>
               <option value="Contract">Contract</option>
               <option value="Internship">Internship</option>
+              <option value="Remote">Remote</option>
             </select>
 
             <select
@@ -94,11 +135,50 @@ const JobsPage = () => {
               <option value="Mid Level">Mid Level</option>
               <option value="Senior Level">Senior Level</option>
             </select>
+
+            <select
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              value={filters.salary}
+              onChange={(e) =>
+                setFilters({ ...filters, salary: e.target.value })
+              }
+            >
+              <option value="">All Salary Ranges</option>
+              <option value="0-50">Under $50k</option>
+              <option value="50-80">$50k - $80k</option>
+              <option value="80-120">$80k - $120k</option>
+              <option value="120-150">$120k - $150k</option>
+              <option value="150-200">$150k - $200k</option>
+              <option value="200-999">$200k+</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Filter by skills (e.g., React, Python)"
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              value={filters.skills}
+              onChange={(e) =>
+                setFilters({ ...filters, skills: e.target.value })
+              }
+            />
           </div>
         </div>
 
         {/* Job Listings */}
         <div className="space-y-4">
+          {/* Show latest jobs first */}
+          {filteredJobs.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                🎉 {filteredJobs.length} Job{filteredJobs.length > 1 ? "s" : ""}{" "}
+                Found
+              </h3>
+              <p className="text-blue-700 text-sm">
+                Showing the most recent job postings first
+              </p>
+            </div>
+          )}
+
           {filteredJobs.length > 0 ? (
             filteredJobs.map((job) => (
               <Link key={job.id} to={`/jobs/${job.id}`} className="block">

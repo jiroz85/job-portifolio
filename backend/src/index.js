@@ -1,9 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const db = require("./config/database");
+const { sequelize, createDatabaseIfNotExists } = require("./config/database");
 const jobRoutes = require("./routes/jobRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 const Job = require("./models/Job");
+const Application = require("./models/Application");
+const User = require("./models/User");
 
 const app = express();
 
@@ -12,36 +17,66 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Test database connection
-const testConnection = async () => {
+// Initialize database and tables
+const initializeDatabase = async () => {
   try {
-    await db.authenticate();
+    // Create database if it doesn't exist
+    await createDatabaseIfNotExists();
+
+    // Connect to the database
+    await sequelize.authenticate();
     console.log("Database connection has been established successfully.");
 
-    // Sync all models
-    await db.sync({ force: false }); // Set force: true to drop and recreate tables
-    console.log("All models were synchronized successfully.");
+    // Sync all models (create tables)
+    await sequelize.sync({ alter: true });
+    console.log("All tables were synchronized successfully.");
   } catch (error) {
-    console.error("Unable to connect to the database:", error);
+    console.error("Unable to initialize database:", error);
   }
 };
 
-testConnection();
+initializeDatabase();
 
 // API Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/users", userRoutes);
 
 // Base route
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to Job Portal API",
     endpoints: {
+      auth: {
+        register: "POST /api/auth/register",
+        login: "POST /api/auth/login",
+        getCurrentUser: "GET /api/auth/me (auth required)",
+      },
       jobs: {
         getAll: "GET /api/jobs",
         getOne: "GET /api/jobs/:id",
         create: "POST /api/jobs",
         update: "PUT /api/jobs/:id",
         delete: "DELETE /api/jobs/:id",
+      },
+      applications: {
+        submit: "POST /api/applications",
+        getByEmail: "GET /api/applications/email/:email",
+        getAll: "GET /api/applications (auth required)",
+        getOne: "GET /api/applications/:id (auth required)",
+        updateStatus: "PUT /api/applications/:id/status (auth required)",
+        delete: "DELETE /api/applications/:id (auth required)",
+      },
+      users: {
+        getAll: "GET /api/users (admin required)",
+        getOne: "GET /api/users/:id (admin required)",
+        update: "PUT /api/users/:id (admin required)",
+        delete: "DELETE /api/users/:id (admin required)",
+        updateRole: "PUT /api/users/:id/role (admin required)",
+        updateStatus: "PUT /api/users/:id/status (admin required)",
+        getStatistics: "GET /api/users/statistics (admin required)",
+        getActivity: "GET /api/users/:id/activity (admin required)",
       },
     },
   });
@@ -64,7 +99,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`API Documentation: http://localhost:${PORT}`);

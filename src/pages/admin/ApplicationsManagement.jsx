@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiSearch,
   FiFilter,
@@ -10,11 +10,11 @@ import {
   FiMail,
   FiPhone,
 } from "react-icons/fi";
-import { useApplications } from "../../context/ApplicationContext";
+import { applicationService } from "../../services/applicationService";
 
 const ApplicationsManagement = () => {
-  const { getAllApplications, updateApplicationStatus } = useApplications();
-  const applications = getAllApplications();
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [jobFilter, setJobFilter] = useState("all");
@@ -22,6 +22,24 @@ const ApplicationsManagement = () => {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [newStatus, setNewStatus] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Load applications from API
+  useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        const response = await applicationService.getAllApplications();
+        if (response.success) {
+          setApplications(response.data);
+        }
+      } catch (error) {
+        console.error("Error loading applications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -46,11 +64,32 @@ const ApplicationsManagement = () => {
     setShowStatusModal(true);
   };
 
-  const handleUpdateStatus = () => {
-    updateApplicationStatus(selectedApplication.id, newStatus);
-    setShowStatusModal(false);
-    setSelectedApplication(null);
-    setNewStatus("");
+  const handleUpdateStatus = async () => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        selectedApplication.id,
+        { status: newStatus }
+      );
+
+      if (response.success) {
+        // Update the local state
+        setApplications(
+          applications.map((app) =>
+            app.id === selectedApplication.id
+              ? { ...app, status: newStatus }
+              : app
+          )
+        );
+        setShowStatusModal(false);
+        setSelectedApplication(null);
+        setNewStatus("");
+      } else {
+        throw new Error(response.error || "Failed to update status");
+      }
+    } catch (error) {
+      console.error("Error updating application status:", error);
+      alert(`Error updating status: ${error.message}`);
+    }
   };
 
   const handleViewDetails = (application) => {
@@ -64,20 +103,37 @@ const ApplicationsManagement = () => {
   };
 
   // Get unique job titles for filter
-  const uniqueJobs = [...new Set(applications.map((app) => app.jobTitle))];
+  const uniqueJobs = [
+    ...new Set(applications.map((app) => app.job?.title || app.jobTitle)),
+  ];
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
-      app.applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.company.toLowerCase().includes(searchTerm.toLowerCase());
+      app.applicantName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.applicantEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (app.job?.title || app.jobTitle)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (app.job?.company || app.company)
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-    const matchesJob = jobFilter === "all" || app.jobTitle === jobFilter;
+    const matchesJob =
+      jobFilter === "all" || (app.job?.title || app.jobTitle) === jobFilter;
 
     return matchesSearch && matchesStatus && matchesJob;
   });
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <div className="text-lg text-gray-600">Loading applications...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

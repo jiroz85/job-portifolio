@@ -66,25 +66,44 @@ const AddJob = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      addJob(formData);
-      alert("Job created successfully!");
-      navigate("/admin/jobs");
+      const result = await addJob({
+        ...formData,
+        approvalStatus: "approved",
+      });
+      if (result.success) {
+        alert("Job created successfully!");
+        navigate("/admin/jobs");
+      } else {
+        alert(`Error posting job: ${result.error}`);
+      }
     }
   };
 
-  const handleSaveDraft = () => {
-    addJob({ ...formData, status: "Draft" });
-    alert("Draft saved successfully!");
+  const handleSaveDraft = async () => {
+    const result = await addJob({ ...formData, status: "Draft" });
+    if (result.success) {
+      alert("Draft saved successfully!");
+    } else {
+      alert(`Error saving draft: ${result.error}`);
+    }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (validateForm()) {
-      addJob({ ...formData, status: "Published" });
-      alert("Job published successfully!");
-      navigate("/admin/jobs");
+      const result = await addJob({
+        ...formData,
+        status: "Published",
+        approvalStatus: "approved",
+      });
+      if (result.success) {
+        alert("Job published successfully!");
+        navigate("/admin/jobs");
+      } else {
+        alert(`Error publishing job: ${result.error}`);
+      }
     }
   };
 
