@@ -9,31 +9,35 @@ const {
   getUserStatistics,
   getUserActivity,
 } = require("../controllers/userController");
+const { authenticateToken, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Get all users with pagination and filtering
-router.get("/", getAllUsers);
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
-// Get user statistics
-router.get("/statistics", getUserStatistics);
+// Get all users with pagination and filtering (admin only)
+router.get("/", authorize("admin"), getAllUsers);
 
-// Get user activity
-router.get("/:id/activity", getUserActivity);
+// Get user statistics (admin only)
+router.get("/statistics", authorize("admin"), getUserStatistics);
 
-// Get user by ID
-router.get("/:id", getUserById);
+// Get user activity (admin only)
+router.get("/:id/activity", authorize("admin"), getUserActivity);
 
-// Update user
-router.put("/:id", updateUser);
+// Get user by ID (admin only)
+router.get("/:id", authorize("admin"), getUserById);
 
-// Update user role
-router.put("/:id/role", updateUserRole);
+// Update user (admin only)
+router.put("/:id", authorize("admin"), updateUser);
 
-// Update user status
-router.put("/:id/status", updateUserStatus);
+// Update user role (admin only)
+router.put("/:id/role", authorize("admin"), updateUserRole);
 
-// Delete user
-router.delete("/:id", deleteUser);
+// Update user status (admin only)
+router.put("/:id/status", authorize("admin"), updateUserStatus);
+
+// Delete user (admin only)
+router.delete("/:id", authorize("admin"), deleteUser);
 
 module.exports = router;

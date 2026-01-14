@@ -15,7 +15,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    process.env.JWT_SECRET || "your-secret-key",
+    process.env.JWT_SECRET || "job-portal-secret-key-2024-hp",
     (err, user) => {
       if (err) {
         return res.status(403).json({
@@ -53,9 +53,13 @@ const authorize = (...roles) => {
 
 // Simple token generation for testing
 const generateToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET || "your-secret-key", {
-    expiresIn: "24h",
-  });
+  return jwt.sign(
+    payload,
+    process.env.JWT_SECRET || "job-portal-secret-key-2024-hp",
+    {
+      expiresIn: "24h",
+    }
+  );
 };
 
 module.exports = {

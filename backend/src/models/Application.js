@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
-const Job = require("./Job");
 
 const Application = sequelize.define(
   "Application",
@@ -10,11 +9,21 @@ const Application = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "users",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    },
     jobId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Job,
+        model: "jobs",
         key: "id",
       },
       onUpdate: "CASCADE",
@@ -110,6 +119,9 @@ const Application = sequelize.define(
     tableName: "applications",
     indexes: [
       {
+        fields: ["userId"],
+      },
+      {
         fields: ["jobId"],
       },
       {
@@ -126,7 +138,16 @@ const Application = sequelize.define(
 );
 
 // Define associations
-Application.belongsTo(Job, { foreignKey: "jobId", as: "job" });
-Job.hasMany(Application, { foreignKey: "jobId", as: "applications" });
+Application.associate = (models) => {
+  Application.belongsTo(models.User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  Application.belongsTo(models.Job, {
+    foreignKey: "jobId",
+    as: "job",
+  });
+};
 
 module.exports = Application;

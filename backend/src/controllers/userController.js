@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const Application = require("../models/Application");
 const Job = require("../models/Job");
+const Audit = require("../models/Audit");
 const { Op } = require("sequelize");
 
 // Get all users with pagination and filtering
@@ -185,6 +186,15 @@ const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get the user before deletion for audit
+    const userBefore = await User.findByPk(id);
+    if (!userBefore) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
     const deletedRowsCount = await User.destroy({
       where: { id },
     });
@@ -195,6 +205,16 @@ const deleteUser = async (req, res) => {
         error: "User not found",
       });
     }
+
+    // Log the action for audit trail
+    await Audit.create({
+      action: "USER_DELETE",
+      targetUserId: parseInt(id),
+      performedBy: req.user.id,
+      details: `Deleted user: ${userBefore.name} (${userBefore.email})`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get("User-Agent"),
+    });
 
     res.json({
       success: true,
@@ -222,6 +242,15 @@ const updateUserRole = async (req, res) => {
       });
     }
 
+    // Get the user before update for audit
+    const userBefore = await User.findByPk(id);
+    if (!userBefore) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
     const [updatedRowsCount] = await User.update({ role }, { where: { id } });
 
     if (updatedRowsCount === 0) {
@@ -230,6 +259,16 @@ const updateUserRole = async (req, res) => {
         error: "User not found",
       });
     }
+
+    // Log the action for audit trail
+    await Audit.create({
+      action: "ROLE_CHANGE",
+      targetUserId: parseInt(id),
+      performedBy: req.user.id,
+      details: `Changed role from ${userBefore.role} to ${role}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get("User-Agent"),
+    });
 
     res.json({
       success: true,
@@ -257,6 +296,15 @@ const updateUserStatus = async (req, res) => {
       });
     }
 
+    // Get the user before update for audit
+    const userBefore = await User.findByPk(id);
+    if (!userBefore) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
     const [updatedRowsCount] = await User.update({ status }, { where: { id } });
 
     if (updatedRowsCount === 0) {
@@ -265,6 +313,16 @@ const updateUserStatus = async (req, res) => {
         error: "User not found",
       });
     }
+
+    // Log the action for audit trail
+    await Audit.create({
+      action: "STATUS_CHANGE",
+      targetUserId: parseInt(id),
+      performedBy: req.user.id,
+      details: `Changed status from ${userBefore.status} to ${status}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get("User-Agent"),
+    });
 
     res.json({
       success: true,

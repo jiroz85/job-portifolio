@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   FiMail,
   FiLock,
@@ -16,10 +16,10 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "jobseeker",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,11 +52,12 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        role: formData.role,
       });
 
       if (success) {
         toast.success("Registration successful!");
-        navigate("/dashboard");
+        // AuthContext already handles role-based redirect
       } else {
         toast.error(error || "Registration failed. Please try again.");
       }
@@ -113,6 +114,28 @@ const Register = () => {
                   className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
                   placeholder="John Doe"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Account Type
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
+                >
+                  <option value="jobseeker">Job Seeker</option>
+                  <option value="employer">Employer</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
             </div>
 

@@ -5,7 +5,7 @@ const User = require("../models/User");
 // Register user
 const register = async (req, res) => {
   try {
-    const { name, email, password, role = "user" } = req.body;
+    const { name, email, password, role = "jobseeker" } = req.body;
 
     // Validate input
     if (!name || !email || !password) {
@@ -39,7 +39,7 @@ const register = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || "fallback-secret",
+      process.env.JWT_SECRET || "job-portal-secret-key-2024-hp",
       { expiresIn: process.env.JWT_EXPIRE || "30d" }
     );
 
@@ -100,7 +100,7 @@ const login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || "fallback-secret",
+      process.env.JWT_SECRET || "job-portal-secret-key-2024-hp",
       { expiresIn: process.env.JWT_EXPIRE || "30d" }
     );
 

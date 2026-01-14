@@ -30,9 +30,9 @@ const User = sequelize.define(
       allowNull: true,
     },
     role: {
-      type: DataTypes.ENUM("user", "admin", "employer"),
+      type: DataTypes.ENUM("jobseeker", "admin", "employer"),
       allowNull: false,
-      defaultValue: "user",
+      defaultValue: "jobseeker",
     },
     status: {
       type: DataTypes.ENUM("active", "inactive", "blocked"),
@@ -152,5 +152,23 @@ const User = sequelize.define(
     ],
   }
 );
+
+// Define associations
+User.associate = (models) => {
+  User.hasMany(models.Application, {
+    foreignKey: "userId",
+    as: "applications",
+  });
+
+  User.hasMany(models.Audit, {
+    foreignKey: "performedBy",
+    as: "performedAudits",
+  });
+
+  User.hasMany(models.Audit, {
+    foreignKey: "targetUserId",
+    as: "auditTargets",
+  });
+};
 
 module.exports = User;

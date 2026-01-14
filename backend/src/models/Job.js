@@ -98,4 +98,12 @@ const Job = sequelize.define(
   }
 );
 
+// Define associations
+Job.associate = (models) => {
+  Job.hasMany(models.Application, {
+    foreignKey: "jobId",
+    as: "applications",
+  });
+};
+
 module.exports = Job;
