@@ -32,6 +32,7 @@ import EmployerLayout from "./pages/employer/EmployerLayout";
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
 import PostJob from "./pages/employer/PostJob";
 import ManageJobs from "./pages/employer/ManageJobs";
+import JobApplicants from "./pages/employer/JobApplicants";
 import ApplicantTracking from "./pages/employer/ApplicantTracking";
 import InterviewManagement from "./pages/employer/InterviewManagement";
 import EmployerAnalytics from "./pages/employer/EmployerAnalytics";
@@ -118,6 +119,10 @@ function App() {
                             <Route index element={<EmployerDashboard />} />
                             <Route path="post-job" element={<PostJob />} />
                             <Route path="jobs" element={<ManageJobs />} />
+                            <Route
+                              path="jobs/:jobId/applicants"
+                              element={<JobApplicants />}
+                            />
                             <Route
                               path="applicants"
                               element={<ApplicantTracking />}

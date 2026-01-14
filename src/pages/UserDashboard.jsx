@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FiBriefcase,
@@ -25,6 +25,7 @@ import useAuth from "../hooks/useAuth";
 import { useApplications } from "../context/ApplicationContext";
 import { useJobs } from "../context/JobContext";
 import { useSavedJobs } from "../context/SavedJobsContext";
+import { applicationService } from "../services/applicationService";
 
 const UserDashboard = () => {
   const { user } = useAuth();
@@ -47,6 +48,27 @@ const UserDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [profileCompletion] = useState(75);
+  const [realApplications, setRealApplications] = useState([]);
+
+  // Fetch real applications from backend
+  useEffect(() => {
+    const fetchUserApplications = async () => {
+      if (user?.email) {
+        try {
+          const response = await applicationService.getApplicationsByEmail(
+            user.email
+          );
+          if (response.success) {
+            setRealApplications(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching user applications:", error);
+        }
+      }
+    };
+
+    fetchUserApplications();
+  }, [user?.email]);
 
   const mockSavedJobs = [
     {
@@ -114,49 +136,87 @@ const UserDashboard = () => {
   ];
 
   const getStatusColor = (status) => {
-    const statusOptions = getApplicationStatusOptions();
-    const statusOption = statusOptions.find((opt) => opt.value === status);
-    return statusOption
-      ? `bg-${statusOption.color}-100 text-${statusOption.color}-800`
-      : "bg-gray-100 text-gray-800";
+    switch (status) {
+      case "pending":
+        return "bg-gray-100 text-gray-800";
+      case "under_review":
+        return "bg-blue-100 text-blue-800";
+      case "shortlisted":
+        return "bg-indigo-100 text-indigo-800";
+      case "interview_scheduled":
+        return "bg-purple-100 text-purple-800";
+      case "interviewed":
+        return "bg-orange-100 text-orange-800";
+      case "offered":
+        return "bg-green-100 text-green-800";
+      case "accepted":
+        return "bg-emerald-100 text-emerald-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "withdrawn":
+        return "bg-gray-100 text-gray-600";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "applied":
+      case "pending":
         return <FiClock className="h-4 w-4" />;
-      case "viewed":
+      case "under_review":
         return <FiEye className="h-4 w-4" />;
       case "shortlisted":
         return <FiStar className="h-4 w-4" />;
+      case "interview_scheduled":
+        return <FiCalendar className="h-4 w-4" />;
+      case "interviewed":
+        return <FiUser className="h-4 w-4" />;
       case "offered":
+        return <FiCheckCircle className="h-4 w-4" />;
+      case "accepted":
         return <FiCheckCircle className="h-4 w-4" />;
       case "rejected":
         return <FiXCircle className="h-4 w-4" />;
+      case "withdrawn":
+        return <FiClock className="h-4 w-4" />;
       default:
         return <FiClock className="h-4 w-4" />;
     }
   };
 
-  const stats = userApplications.reduce(
+  const stats = realApplications.reduce(
     (acc, app) => {
-      acc[app.status]++;
+      acc.total++;
+      if (app.status === "applied") acc.applied++;
+      else if (app.status === "under_review" || app.status === "viewed")
+        acc.viewed++;
+      else if (app.status === "shortlisted") acc.shortlisted++;
+      else if (app.status === "offered" || app.status === "accepted")
+        acc.offered++;
+      else if (
+        app.status === "interview_scheduled" ||
+        app.status === "interviewed"
+      )
+        acc.interviews++;
       return acc;
     },
     {
+      total: 0,
       applied: 0,
       viewed: 0,
       shortlisted: 0,
-      offered: 0,
-      rejected: 0,
+      interviews: 0,
+      offers: 0,
       saved: getSavedJobsCount(),
     }
   );
 
-  const filteredApplications = userApplications.filter((app) => {
+  const filteredApplications = realApplications.filter((app) => {
     const matchesSearch =
-      app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.company.toLowerCase().includes(searchTerm.toLowerCase());
+      app.job?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.job?.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.applicantName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || app.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -492,9 +552,15 @@ const UserDashboard = () => {
                   className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">All Status</option>
-                  <option value="applied">Applied</option>
-                  <option value="interview">Interview</option>
-                  <option value="offer">Offer</option>
+                  <option value="pending">Pending</option>
+                  <option value="under_review">Under Review</option>
+                  <option value="shortlisted">Shortlisted</option>
+                  <option value="interview_scheduled">
+                    Interview Scheduled
+                  </option>
+                  <option value="interviewed">Interviewed</option>
+                  <option value="offered">Offered</option>
+                  <option value="accepted">Accepted</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </div>
@@ -515,23 +581,21 @@ const UserDashboard = () => {
                         <div className="flex-1">
                           <div className="flex items-center">
                             <h3 className="text-sm font-medium text-gray-900">
-                              {application.jobTitle}
+                              {application.job?.title || "Unknown Position"}
                             </h3>
                             <span className="ml-3 text-sm text-gray-500">
-                              at {application.company}
+                              at {application.job?.company || "Unknown Company"}
                             </span>
                           </div>
                           <div className="flex items-center mt-1 text-sm text-gray-500">
                             <FiMapPin className="h-3 w-3 mr-1" />
-                            {application.location}
-                            <span className="mx-2">•</span>
-                            <FiDollarSign className="h-3 w-3 mr-1" />
-                            {application.salary}
+                            {application.job?.location ||
+                              "Location not specified"}
                             <span className="mx-2">•</span>
                             <FiCalendar className="h-3 w-3 mr-1" />
                             Applied:{" "}
                             {new Date(
-                              application.appliedDate
+                              application.applicationDate
                             ).toLocaleDateString()}
                           </div>
                           {application.interviewDate && (

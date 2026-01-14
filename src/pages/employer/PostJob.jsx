@@ -93,6 +93,7 @@ const PostJob = () => {
       const response = await jobService.createJob(jobData);
 
       if (response.success) {
+        alert("Job posted successfully!");
         // Navigate to jobs list after successful posting
         navigate("/employer/jobs");
       } else {

@@ -68,6 +68,19 @@ export const applicationService = {
     }
   },
 
+  // Get applications by job ID
+  getApplicationsByJobId: async (jobId) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/applications?jobId=${jobId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching applications by job ID:", error);
+      throw error;
+    }
+  },
+
   // Delete application
   deleteApplication: async (id) => {
     try {

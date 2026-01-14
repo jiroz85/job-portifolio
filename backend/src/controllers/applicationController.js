@@ -102,8 +102,15 @@ const createApplication = async (req, res) => {
       availability,
     } = req.body;
 
+    console.log("Received application data:", req.body);
+
     // Validate required fields
     if (!jobId || !applicantName || !applicantEmail) {
+      console.log("Validation failed - missing required fields:", {
+        jobId,
+        applicantName,
+        applicantEmail,
+      });
       return res.status(400).json({
         success: false,
         error: "Job ID, applicant name, and email are required",
@@ -112,7 +119,9 @@ const createApplication = async (req, res) => {
 
     // Check if job exists and is active
     const job = await Job.findByPk(jobId);
+    console.log("Found job:", job);
     if (!job) {
+      console.log("Job not found with ID:", jobId);
       return res.status(404).json({
         success: false,
         error: "Job not found",
@@ -120,24 +129,30 @@ const createApplication = async (req, res) => {
     }
 
     if (job.status !== "active" && job.status !== "Published") {
+      console.log("Job status validation failed. Current status:", job.status);
       return res.status(400).json({
         success: false,
         error: "This job is no longer accepting applications",
       });
     }
 
-    // Check if user has already applied for this job
+    // Check if user has already applied for this job (within last 24 hours to prevent spam)
     const existingApplication = await Application.findOne({
       where: {
         jobId,
         applicantEmail,
+        applicationDate: {
+          [require("sequelize").Op.gte]: new Date(
+            Date.now() - 24 * 60 * 60 * 1000
+          ), // Last 24 hours
+        },
       },
     });
 
     if (existingApplication) {
       return res.status(400).json({
         success: false,
-        error: "You have already applied for this job",
+        error: "You have already applied for this job within the last 24 hours",
       });
     }
 

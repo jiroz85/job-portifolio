@@ -36,6 +36,9 @@ const JobDetailPage = () => {
   useEffect(() => {
     const jobs = getPublishedJobs();
     const foundJob = jobs.find((j) => j.id === parseInt(id));
+    console.log("Looking for job with ID:", id);
+    console.log("Available jobs:", jobs);
+    console.log("Found job:", foundJob);
     setJob(foundJob);
   }, [id, getPublishedJobs]);
 
@@ -89,7 +92,8 @@ const JobDetailPage = () => {
       newErrors.skills = "Skills are required";
     if (!applicationData.coverLetter.trim())
       newErrors.coverLetter = "Cover letter is required";
-    if (!applicationData.resume) newErrors.resume = "Resume is required";
+    // Remove resume requirement temporarily
+    // if (!applicationData.resume) newErrors.resume = "Resume is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -109,15 +113,22 @@ const JobDetailPage = () => {
           education: applicationData.education,
           skills: applicationData.skills,
           coverLetter: applicationData.coverLetter,
+          availability: "Immediate", // Add required availability field
         };
+
+        console.log("Submitting application with payload:", applicationPayload);
 
         // Call the actual API
         const response = await applicationService.submitApplication(
           applicationPayload
         );
 
+        console.log("Application response:", response);
+
         if (response.success) {
-          alert("Application submitted successfully!");
+          alert(
+            "Application submitted successfully! The employer will be notified."
+          );
           setShowApplicationModal(false);
           setApplicationData({
             fullName: "",
@@ -129,12 +140,36 @@ const JobDetailPage = () => {
             coverLetter: "",
             resume: null,
           });
+
+          // Trigger a global event to notify dashboard components
+          console.log("Dispatching applicationSubmitted event...");
+          const eventData = { jobId: parseInt(id), timestamp: Date.now() };
+          // Use both custom event and localStorage for cross-tab communication
+          window.dispatchEvent(
+            new CustomEvent("applicationSubmitted", { detail: eventData })
+          );
+          localStorage.setItem(
+            "applicationSubmitted",
+            JSON.stringify(eventData)
+          );
+          localStorage.setItem(
+            "applicationSubmittedTimestamp",
+            Date.now().toString()
+          );
+          console.log("Event dispatched successfully");
         } else {
           throw new Error(response.error || "Failed to submit application");
         }
       } catch (error) {
         console.error("Error submitting application:", error);
-        alert(`Error submitting application: ${error.message}`);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+
+        const errorMessage =
+          error.response?.data?.error ||
+          error.message ||
+          "Unknown error occurred";
+        alert(`Error submitting application: ${errorMessage}`);
       }
     }
   };
@@ -408,7 +443,7 @@ const JobDetailPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Resume *
+                    Resume (Optional)
                   </label>
                   <input
                     type="file"

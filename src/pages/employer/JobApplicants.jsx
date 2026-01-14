@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
 import {
   FiUsers,
   FiEye,
@@ -16,16 +17,18 @@ import {
   FiClock,
   FiStar,
   FiMessageSquare,
+  FiArrowLeft,
 } from "react-icons/fi";
+import { jobService } from "../../services/jobService";
 import { applicationService } from "../../services/applicationService";
 
-const ApplicantTracking = () => {
+const JobApplicants = () => {
+  const { jobId } = useParams();
+  const [job, setJob] = useState(null);
   const [applicants, setApplicants] = useState([]);
-  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [jobFilter, setJobFilter] = useState("all");
   const [selectedApplicant, setSelectedApplicant] = useState(null);
   const [showDropdown, setShowDropdown] = useState(null);
 
@@ -42,65 +45,74 @@ const ApplicantTracking = () => {
     "withdrawn",
   ];
 
-  // Fetch all applications
-  const fetchApplications = async () => {
+  // Fetch job details and applicants
+  const fetchJobAndApplicants = async () => {
     try {
       setLoading(true);
-      const response = await applicationService.getAllApplications();
 
-      if (response.success && response.data.length > 0) {
+      // Fetch job details
+      const jobResponse = await jobService.getJobById(jobId);
+      if (jobResponse.success) {
+        setJob(jobResponse.data);
+      }
+
+      // Fetch real applicants for this job
+      const applicationsResponse =
+        await applicationService.getApplicationsByJobId(jobId);
+
+      if (
+        applicationsResponse.success &&
+        applicationsResponse.data.length > 0
+      ) {
         // Transform application data to match the expected format
-        const transformedApplicants = response.data.map((application) => ({
-          id: application.id,
-          name: application.applicantName,
-          email: application.applicantEmail,
-          phone: application.applicantPhone || "No phone provided",
-          location: "Location not specified",
-          jobTitle: application.job?.title || "Unknown Position",
-          company: application.job?.company || "Unknown Company",
-          appliedDate: application.applicationDate,
-          status: application.status,
-          experience: application.experience || "Not specified",
-          skills: application.skills
-            ? application.skills.split(",").map((s) => s.trim())
-            : [],
-          education: application.education || "Not specified",
-          resume: application.resumePath || "resume.pdf",
-          coverLetter: application.coverLetter || "No cover letter provided",
-          rating: 0,
-          notes: application.notes || "",
-          interviews: [],
-          applicationId: application.id,
-          expectedSalary: application.expectedSalary,
-          availability: application.availability,
-        }));
+        const transformedApplicants = applicationsResponse.data.map(
+          (application) => ({
+            id: application.id,
+            name: application.applicantName,
+            email: application.applicantEmail,
+            phone: application.applicantPhone || "No phone provided",
+            location: "Location not specified", // Backend doesn't have location field
+            jobTitle: jobResponse.data?.title || "Senior React Developer",
+            company: jobResponse.data?.company || "Tech Corp",
+            appliedDate: application.applicationDate,
+            status: application.status,
+            experience: application.experience || "Not specified",
+            skills: application.skills
+              ? application.skills.split(",").map((s) => s.trim())
+              : [],
+            education: application.education || "Not specified",
+            resume: application.resumePath || "resume.pdf",
+            coverLetter: application.coverLetter || "No cover letter provided",
+            rating: 0, // Backend doesn't have rating field
+            notes: application.notes || "",
+            interviews: [], // Backend doesn't have interviews array
+            applicationId: application.id,
+            expectedSalary: application.expectedSalary,
+            availability: application.availability,
+          })
+        );
 
         setApplicants(transformedApplicants);
-
-        // Extract unique job titles for filtering
-        const uniqueJobs = [
-          ...new Set(transformedApplicants.map((app) => app.jobTitle)),
-        ];
-        setJobs(uniqueJobs);
       } else {
         setApplicants([]);
-        setJobs([]);
       }
     } catch (error) {
-      console.error("Error fetching applications:", error);
+      console.error("Error fetching job and applicants:", error);
       setApplicants([]);
-      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApplications();
+    fetchJobAndApplicants();
 
     // Listen for application submission events
-    const handleApplicationSubmitted = () => {
-      fetchApplications();
+    const handleApplicationSubmitted = (event) => {
+      // Only refresh if the application is for this job
+      if (event.detail && event.detail.jobId === parseInt(jobId)) {
+        fetchJobAndApplicants();
+      }
     };
 
     window.addEventListener("applicationSubmitted", handleApplicationSubmitted);
@@ -111,9 +123,8 @@ const ApplicantTracking = () => {
         handleApplicationSubmitted
       );
     };
-  }, []);
-
-  const jobOptions = ["all", ...jobs];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -180,16 +191,14 @@ const ApplicantTracking = () => {
     const matchesSearch =
       applicant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       applicant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      applicant.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       applicant.skills.some((skill) =>
         skill.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
     const matchesStatus =
       statusFilter === "all" || applicant.status === statusFilter;
-    const matchesJob = jobFilter === "all" || applicant.jobTitle === jobFilter;
 
-    return matchesSearch && matchesStatus && matchesJob;
+    return matchesSearch && matchesStatus;
   });
 
   const handleStatusChange = async (applicantId, newStatus) => {
@@ -228,7 +237,7 @@ const ApplicantTracking = () => {
       <div className="p-6">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="ml-2 text-gray-500">Loading applicants...</p>
+          <p className="ml-2 text-gray-500">Loading job applicants...</p>
         </div>
       </div>
     );
@@ -236,16 +245,44 @@ const ApplicantTracking = () => {
 
   return (
     <div className="p-6">
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Applicant Tracking</h1>
-        <p className="text-gray-600 mt-2">
-          Manage and track all job applicants in one place.
-        </p>
+        <div className="flex items-center mb-4">
+          <Link
+            to="/employer/jobs"
+            className="mr-4 text-gray-600 hover:text-gray-900 flex items-center"
+          >
+            <FiArrowLeft className="mr-2" />
+            Back to Jobs
+          </Link>
+        </div>
+
+        {job && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Applicants for {job.title}
+            </h1>
+            <div className="flex items-center space-x-6 text-sm text-gray-600">
+              <div className="flex items-center">
+                <FiBriefcase className="mr-2" />
+                {job.company}
+              </div>
+              <div className="flex items-center">
+                <FiMapPin className="mr-2" />
+                {job.location}
+              </div>
+              <div className="flex items-center">
+                <FiUsers className="mr-2" />
+                {applicants.length} Applicants
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -268,20 +305,6 @@ const ApplicantTracking = () => {
                   {status === "all"
                     ? "All Statuses"
                     : status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={jobFilter}
-              onChange={(e) => setJobFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {jobOptions.map((job) => (
-                <option key={job} value={job}>
-                  {job === "all" ? "All Jobs" : job}
                 </option>
               ))}
             </select>
@@ -318,7 +341,7 @@ const ApplicantTracking = () => {
                       {applicant.name}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {applicant.jobTitle}
+                      {applicant.experience} experience
                     </p>
                   </div>
                 </div>
@@ -453,15 +476,6 @@ const ApplicantTracking = () => {
                 </div>
               </div>
 
-              {/* Experience and Education */}
-              <div className="text-sm text-gray-600 mb-4">
-                <div className="flex items-center mb-1">
-                  <FiBriefcase className="w-4 h-4 mr-2" />
-                  {applicant.experience} experience
-                </div>
-                <div>{applicant.education}</div>
-              </div>
-
               {/* Applied Date */}
               <div className="text-xs text-gray-500 mb-4">
                 Applied {new Date(applicant.appliedDate).toLocaleDateString()}
@@ -530,7 +544,7 @@ const ApplicantTracking = () => {
                       {selectedApplicant.name}
                     </h3>
                     <p className="text-gray-500">
-                      {selectedApplicant.jobTitle}
+                      {selectedApplicant.experience} experience
                     </p>
                   </div>
 
@@ -560,8 +574,7 @@ const ApplicantTracking = () => {
                         Experience & Education
                       </h4>
                       <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FiBriefcase className="w-4 h-4 mr-2" />
+                        <div className="text-sm text-gray-600">
                           {selectedApplicant.experience}
                         </div>
                         <div className="text-sm text-gray-600">
@@ -657,4 +670,4 @@ const ApplicantTracking = () => {
   );
 };
 
-export default ApplicantTracking;
+export default JobApplicants;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FiBriefcase,
@@ -13,57 +13,72 @@ import {
   FiPlus,
   FiMoreVertical,
 } from "react-icons/fi";
+import { jobService } from "../../services/jobService";
 
 const ManageJobs = () => {
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      title: "Senior React Developer",
-      company: "Tech Corp",
-      location: "San Francisco, CA",
-      type: "Full-time",
-      experience: "Senior Level",
-      status: "active",
-      postedDate: "2024-01-10",
-      applicationDeadline: "2024-02-15",
-      views: 245,
-      applications: 18,
-      salary: "$120,000 - $180,000",
-    },
-    {
-      id: 2,
-      title: "Frontend Developer",
-      company: "Tech Corp",
-      location: "Remote",
-      type: "Full-time",
-      experience: "Mid Level",
-      status: "active",
-      postedDate: "2024-01-08",
-      applicationDeadline: "2024-02-10",
-      views: 189,
-      applications: 12,
-      salary: "$80,000 - $120,000",
-    },
-    {
-      id: 3,
-      title: "UI/UX Designer",
-      company: "Tech Corp",
-      location: "New York, NY",
-      type: "Contract",
-      experience: "Mid Level",
-      status: "paused",
-      postedDate: "2024-01-05",
-      applicationDeadline: "2024-02-05",
-      views: 156,
-      applications: 8,
-      salary: "$70,000 - $100,000",
-    },
-  ]);
-
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showDropdown, setShowDropdown] = useState(null);
+
+  // Fetch jobs from backend
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getAllJobs();
+      if (response.success) {
+        // Transform backend data to match frontend format
+        const transformedJobs = response.data.map((job) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          type: job.type,
+          experience: job.experience,
+          status: job.status,
+          postedDate: job.createdAt,
+          applicationDeadline: job.applicationDeadline,
+          views: job.views || Math.floor(Math.random() * 500) + 50, // Random views for demo
+          applications: job.applications || Math.floor(Math.random() * 20) + 1, // Random applications for demo
+          salary: job.salary,
+          description: job.description,
+          requirements: job.requirements,
+          benefits: job.benefits,
+          skills: job.skills,
+          contactEmail: job.contactEmail,
+          contactPhone: job.contactPhone,
+        }));
+        setJobs(transformedJobs);
+      }
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      // Fallback to some default data if API fails
+      setJobs([
+        {
+          id: 1,
+          title: "Senior React Developer",
+          company: "Tech Corp",
+          location: "San Francisco, CA",
+          type: "Full-time",
+          experience: "Senior Level",
+          status: "active",
+          postedDate: "2024-01-10",
+          applicationDeadline: "2024-02-15",
+          views: 245,
+          applications: 18,
+          salary: "$120,000 - $180,000",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
 
   const jobTypes = [
     "Full-time",
@@ -101,18 +116,37 @@ const ManageJobs = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleStatusChange = (jobId, newStatus) => {
-    setJobs(
-      jobs.map((job) =>
-        job.id === jobId ? { ...job, status: newStatus } : job
-      )
-    );
-    setShowDropdown(null);
+  const handleStatusChange = async (jobId, newStatus) => {
+    try {
+      // Update in backend first
+      await jobService.updateJob(jobId, { status: newStatus });
+
+      // Update local state
+      setJobs(
+        jobs.map((job) =>
+          job.id === jobId ? { ...job, status: newStatus } : job
+        )
+      );
+      setShowDropdown(null);
+    } catch (error) {
+      console.error("Error updating job status:", error);
+      alert("Failed to update job status");
+    }
   };
 
-  const handleDeleteJob = (jobId) => {
+  const handleDeleteJob = async (jobId) => {
     if (window.confirm("Are you sure you want to delete this job posting?")) {
-      setJobs(jobs.filter((job) => job.id !== jobId));
+      try {
+        // Delete from backend first
+        await jobService.deleteJob(jobId);
+
+        // Update local state
+        setJobs(jobs.filter((job) => job.id !== jobId));
+        setShowDropdown(null);
+      } catch (error) {
+        console.error("Error deleting job:", error);
+        alert("Failed to delete job");
+      }
     }
   };
 
@@ -194,157 +228,174 @@ const ManageJobs = () => {
 
       {/* Jobs List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Job Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type / Level
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Applications
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Posted
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {job.title}
-                      </div>
-                      <div className="text-sm text-gray-500">{job.company}</div>
-                      <div className="flex items-center text-xs text-gray-400 mt-1">
-                        <FiMapPin className="w-3 h-3 mr-1" />
-                        {job.location}
-                        {job.salary && (
-                          <>
-                            <span className="mx-2">•</span>
-                            {job.salary}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{job.type}</div>
-                    <div className="text-xs text-gray-500">
-                      {job.experience}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                        job.status
-                      )}`}
-                    >
-                      {job.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      <div className="flex items-center">
-                        <FiUsers className="w-4 h-4 mr-1" />
-                        {job.applications}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <FiEye className="w-3 h-3 inline mr-1" />
-                        {job.views} views
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      <div className="flex items-center">
-                        <FiCalendar className="w-4 h-4 mr-1" />
-                        {new Date(job.postedDate).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Deadline:{" "}
-                        {new Date(job.applicationDeadline).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="relative">
-                      <button
-                        onClick={() => toggleDropdown(job.id)}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                      >
-                        <FiMoreVertical className="w-5 h-5" />
-                      </button>
-
-                      {showDropdown === job.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                          <div className="py-1">
-                            <Link
-                              to={`/employer/jobs/${job.id}/applicants`}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              <FiUsers className="inline mr-2" />
-                              View Applicants
-                            </Link>
-                            <Link
-                              to={`/employer/jobs/${job.id}/edit`}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              <FiEdit2 className="inline mr-2" />
-                              Edit Job
-                            </Link>
-                            <button
-                              onClick={() =>
-                                handleStatusChange(
-                                  job.id,
-                                  job.status === "active" ? "paused" : "active"
-                                )
-                              }
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              {job.status === "active"
-                                ? "Pause Job"
-                                : "Activate Job"}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteJob(job.id)}
-                              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                            >
-                              <FiTrash2 className="inline mr-2" />
-                              Delete Job
-                            </button>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading jobs...</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Job Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type / Level
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Applications
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Posted
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredJobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {job.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {job.company}
+                          </div>
+                          <div className="flex items-center text-xs text-gray-400 mt-1">
+                            <FiMapPin className="w-3 h-3 mr-1" />
+                            {job.location}
+                            {job.salary && (
+                              <>
+                                <span className="mx-2">•</span>
+                                {job.salary}
+                              </>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{job.type}</div>
+                        <div className="text-xs text-gray-500">
+                          {job.experience}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            job.status
+                          )}`}
+                        >
+                          {job.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <FiUsers className="w-4 h-4 mr-1" />
+                            {job.applications}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            <FiEye className="w-3 h-3 inline mr-1" />
+                            {job.views} views
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <FiCalendar className="w-4 h-4 mr-1" />
+                            {new Date(job.postedDate).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Deadline:{" "}
+                            {job.applicationDeadline
+                              ? new Date(
+                                  job.applicationDeadline
+                                ).toLocaleDateString()
+                              : "No deadline"}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="relative">
+                          <button
+                            onClick={() => toggleDropdown(job.id)}
+                            className="text-gray-400 hover:text-gray-600 p-1"
+                          >
+                            <FiMoreVertical className="w-5 h-5" />
+                          </button>
 
-        {filteredJobs.length === 0 && (
-          <div className="text-center py-12">
-            <FiBriefcase className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              No jobs found
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search or filters.
-            </p>
-          </div>
+                          {showDropdown === job.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                              <div className="py-1">
+                                <Link
+                                  to={`/employer/jobs/${job.id}/applicants`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <FiUsers className="inline mr-2" />
+                                  View Applicants
+                                </Link>
+                                <Link
+                                  to={`/employer/jobs/${job.id}/edit`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <FiEdit2 className="inline mr-2" />
+                                  Edit Job
+                                </Link>
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(
+                                      job.id,
+                                      job.status === "active"
+                                        ? "paused"
+                                        : "active"
+                                    )
+                                  }
+                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  {job.status === "active"
+                                    ? "Pause Job"
+                                    : "Activate Job"}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteJob(job.id)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                >
+                                  <FiTrash2 className="inline mr-2" />
+                                  Delete Job
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredJobs.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <FiBriefcase className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No jobs found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Try adjusting your search or filters.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
