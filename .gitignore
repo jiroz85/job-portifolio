@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 backend/.env
 .env
+backend/check_*.js
+backend/clear_*.js
+backend/check_db.js
