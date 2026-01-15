@@ -1,6 +1,39 @@
 const { Op } = require("sequelize");
 const Job = require("../models/Job");
 
+// @desc    Get all jobs (admin)
+// @route   GET /api/jobs/all
+// @access  Private/Admin
+exports.getAllJobsAdmin = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: jobs } = await Job.findAndCountAll({
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.json({
+      success: true,
+      data: {
+        jobs,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(count / limit),
+          totalJobs: count,
+          hasNext: page * limit < count,
+          hasPrev: page > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching jobs (admin):", error);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
 // @desc    Get all jobs
 // @route   GET /api/jobs
 // @access  Public
@@ -164,6 +197,30 @@ exports.deleteJob = async (req, res) => {
     res.json({ success: true, data: {} });
   } catch (error) {
     console.error("Error deleting job:", error);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+// @desc    Update job status/approvalStatus
+// @route   PATCH /api/jobs/:id/status
+// @access  Private/Admin/Employer
+exports.updateJobStatus = async (req, res) => {
+  try {
+    const { status, approvalStatus } = req.body;
+    const job = await Job.findByPk(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ success: false, error: "Job not found" });
+    }
+
+    const updates = {};
+    if (status) updates.status = status;
+    if (approvalStatus) updates.approvalStatus = approvalStatus;
+
+    await job.update(updates);
+    res.json({ success: true, data: job });
+  } catch (error) {
+    console.error("Error updating job status:", error);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };

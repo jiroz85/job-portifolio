@@ -7,7 +7,7 @@ import {
   FiEyeOff,
   FiSave,
 } from "react-icons/fi";
-import { useAuth } from "../../context/AuthContext";
+import useAuth from "../../hooks/useAuth";
 
 const UserSettings = () => {
   const { updatePassword } = useAuth();

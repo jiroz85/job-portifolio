@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   FiUser,
   FiMail,
@@ -8,10 +8,10 @@ import {
   FiSave,
   FiX,
 } from "react-icons/fi";
-import { useAuth } from "../../context/AuthContext";
+import useAuth from "../../hooks/useAuth";
 
 const UserProfile = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -20,18 +20,6 @@ const UserProfile = () => {
     location: "",
     bio: "",
   });
-
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        location: user.location || "",
-        bio: user.bio || "",
-      });
-    }
-  }, [user]);
 
   const handleChange = (e) => {
     setFormData({
@@ -43,7 +31,7 @@ const UserProfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateUser(formData);
+      await updateProfile(formData);
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -73,7 +61,16 @@ const UserProfile = () => {
             <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
             {!isEditing && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setFormData({
+                    name: user.name || "",
+                    email: user.email || "",
+                    phone: user.phone || "",
+                    location: user.location || "",
+                    bio: user.bio || "",
+                  });
+                  setIsEditing(true);
+                }}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <FiEdit2 size={16} />

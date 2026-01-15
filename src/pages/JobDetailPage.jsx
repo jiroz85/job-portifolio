@@ -9,20 +9,18 @@ import {
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useJobs } from "../context/JobContext";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth";
 import { applicationService } from "../services/applicationService";
 
 const JobDetailPage = () => {
   const { id } = useParams();
   const { getPublishedJobs } = useJobs();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   const [job, setJob] = useState(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [applicationData, setApplicationData] = useState({
-    fullName: "",
-    email: user?.email || "",
     phone: "",
     experience: "",
     education: "",
@@ -79,9 +77,6 @@ const JobDetailPage = () => {
 
   const validateApplication = () => {
     const newErrors = {};
-    if (!applicationData.fullName.trim())
-      newErrors.fullName = "Full name is required";
-    if (!applicationData.email.trim()) newErrors.email = "Email is required";
     if (!applicationData.phone.trim())
       newErrors.phone = "Phone number is required";
     if (!applicationData.experience.trim())
@@ -103,11 +98,9 @@ const JobDetailPage = () => {
     e.preventDefault();
     if (validateApplication()) {
       try {
-        // Prepare application data to match backend API
+        // Prepare application data to match backend API - user data comes from authentication
         const applicationPayload = {
           jobId: parseInt(id),
-          applicantName: applicationData.fullName,
-          applicantEmail: applicationData.email,
           applicantPhone: applicationData.phone,
           experience: applicationData.experience,
           education: applicationData.education,
@@ -131,8 +124,6 @@ const JobDetailPage = () => {
           );
           setShowApplicationModal(false);
           setApplicationData({
-            fullName: "",
-            email: user?.email || "",
             phone: "",
             experience: "",
             education: "",
@@ -292,132 +283,105 @@ const JobDetailPage = () => {
               </div>
 
               <form onSubmit={handleSubmitApplication} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={applicationData.fullName}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.fullName ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="John Doe"
-                    />
-                    {errors.fullName && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.fullName}
-                      </p>
-                    )}
+                {/* User Information Display */}
+                <div className="bg-gray-50 p-4 rounded-md mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Applicant Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Name
+                      </label>
+                      <p className="text-gray-900 font-medium">{user?.name}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <p className="text-gray-900 font-medium">{user?.email}</p>
+                    </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={applicationData.email}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="john@example.com"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={applicationData.phone}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.phone ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                  )}
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={applicationData.phone}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.phone ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="+1 (555) 123-4567"
-                    />
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.phone}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Experience *
+                  </label>
+                  <input
+                    type="text"
+                    name="experience"
+                    value={applicationData.experience}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.experience ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="e.g. 3 years of web development experience"
+                  />
+                  {errors.experience && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.experience}
+                    </p>
+                  )}
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Experience *
-                    </label>
-                    <input
-                      type="text"
-                      name="experience"
-                      value={applicationData.experience}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.experience ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="e.g. 3 years of frontend development"
-                    />
-                    {errors.experience && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.experience}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Education *
+                  </label>
+                  <input
+                    type="text"
+                    name="education"
+                    value={applicationData.education}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.education ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="e.g. Bachelor's in Computer Science"
+                  />
+                  {errors.education && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.education}
+                    </p>
+                  )}
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Education *
-                    </label>
-                    <input
-                      type="text"
-                      name="education"
-                      value={applicationData.education}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.education ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="e.g. Bachelor's in Computer Science"
-                    />
-                    {errors.education && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.education}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Skills *
-                    </label>
-                    <input
-                      type="text"
-                      name="skills"
-                      value={applicationData.skills}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.skills ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="e.g. React, JavaScript, CSS"
-                    />
-                    {errors.skills && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.skills}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Skills *
+                  </label>
+                  <input
+                    type="text"
+                    name="skills"
+                    value={applicationData.skills}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.skills ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="e.g. React, JavaScript, CSS"
+                  />
+                  {errors.skills && (
+                    <p className="mt-1 text-sm text-red-600">{errors.skills}</p>
+                  )}
                 </div>
 
                 <div>

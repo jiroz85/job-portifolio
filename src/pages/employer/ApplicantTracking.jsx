@@ -73,6 +73,13 @@ const ApplicantTracking = () => {
           applicationId: application.id,
           expectedSalary: application.expectedSalary,
           availability: application.availability,
+          // Verification and risk fields
+          isVerified: application.isVerified || false,
+          emailVerified: application.emailVerified || false,
+          riskScore: application.riskScore || 0,
+          flagged: application.flagged || false,
+          ipAddress: application.ipAddress,
+          verificationToken: application.verificationToken,
         }));
 
         setApplicants(transformedApplicants);
@@ -197,6 +204,13 @@ const ApplicantTracking = () => {
       // Find the application to get the applicationId
       const applicant = applicants.find((a) => a.id === applicantId);
       if (applicant && applicant.applicationId) {
+        // Check if status is actually changing
+        if (applicant.status === newStatus) {
+          console.log(`Status is already ${newStatus}, skipping update`);
+          setShowDropdown(null);
+          return;
+        }
+
         // Update in backend first
         await applicationService.updateApplicationStatus(
           applicant.applicationId,
@@ -405,18 +419,73 @@ const ApplicantTracking = () => {
 
               {/* Status and Rating */}
               <div className="flex items-center justify-between mb-4">
-                <span
-                  className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                    applicant.status
-                  )}`}
-                >
-                  {getStatusIcon(applicant.status)}
-                  <span className="ml-1">{applicant.status}</span>
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                      applicant.status
+                    )}`}
+                  >
+                    {getStatusIcon(applicant.status)}
+                    <span className="ml-1">{applicant.status}</span>
+                  </span>
+
+                  {/* Verification badges */}
+                  {applicant.emailVerified && (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      ✓ Email Verified
+                    </span>
+                  )}
+
+                  {applicant.flagged && (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                      ⚠ Flagged
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center space-x-1">
                   {getRatingStars(applicant.rating)}
                 </div>
               </div>
+
+              {/* Risk Assessment */}
+              {applicant.riskScore > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600">
+                      Risk Assessment
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${
+                        applicant.riskScore > 50
+                          ? "text-red-600"
+                          : applicant.riskScore > 25
+                          ? "text-yellow-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {applicant.riskScore > 50
+                        ? "High Risk"
+                        : applicant.riskScore > 25
+                        ? "Medium Risk"
+                        : "Low Risk"}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full ${
+                        applicant.riskScore > 50
+                          ? "bg-red-500"
+                          : applicant.riskScore > 25
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
+                      style={{
+                        width: `${Math.min(applicant.riskScore, 100)}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4">

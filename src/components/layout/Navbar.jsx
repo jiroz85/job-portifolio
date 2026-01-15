@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaBriefcase } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
 import NotificationDropdown from "../Notifications/NotificationDropdown";
@@ -6,13 +6,6 @@ import NotificationDropdown from "../Notifications/NotificationDropdown";
 const Navbar = () => {
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Show Home and Browse Jobs on home, login, and register pages
-  const showHomeNav =
-    location.pathname === "/" ||
-    location.pathname === "/login" ||
-    location.pathname === "/register";
 
   const handleLogout = () => {
     logout();
@@ -31,7 +24,8 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-6">
-            {showHomeNav && (
+            {/* Always show Home and Browse Jobs for non-authenticated users */}
+            {!isAuthenticated && (
               <>
                 <Link to="/" className="nav-link">
                   Home

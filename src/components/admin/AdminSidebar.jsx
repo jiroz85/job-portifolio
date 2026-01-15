@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
 import {
   FiHome,
   FiBriefcase,
@@ -10,9 +10,13 @@ import {
   FiSettings,
   FiBell,
 } from "react-icons/fi";
-import { useState } from "react";
 
-const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
+const AdminSidebar = ({
+  isOpen = true,
+  toggleSidebar,
+  activeSection,
+  onSectionChange,
+}) => {
   const [dropdownOpen, setDropdownOpen] = useState({
     jobs: false,
     users: false,
@@ -24,6 +28,12 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
       ...prev,
       [menu]: !prev[menu],
     }));
+  };
+
+  const handleSectionChange = (section) => {
+    if (typeof onSectionChange === "function") {
+      onSectionChange(section);
+    }
   };
   return (
     <div
@@ -38,20 +48,17 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
       <nav className="px-4 py-6">
         <ul className="space-y-2">
           <li>
-            <NavLink
-              to="/admin"
-              end
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`
-              }
+            <button
+              onClick={() => handleSectionChange("dashboard")}
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                activeSection === "dashboard"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FiHome className="w-5 h-5 mr-3" />
               <span>Dashboard</span>
-            </NavLink>
+            </button>
           </li>
 
           <li>
@@ -72,32 +79,28 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
             {dropdownOpen.jobs && (
               <ul className="mt-1 ml-8 space-y-1">
                 <li>
-                  <NavLink
-                    to="/admin/jobs"
-                    className={({ isActive }) =>
-                      `block px-3 py-2 text-sm rounded-md ${
-                        isActive
-                          ? "text-indigo-600 bg-indigo-50"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`
-                    }
+                  <button
+                    onClick={() => handleSectionChange("jobs")}
+                    className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
+                      activeSection === "jobs"
+                        ? "text-indigo-600 bg-indigo-50"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
                   >
                     All Jobs
-                  </NavLink>
+                  </button>
                 </li>
                 <li>
-                  <NavLink
-                    to="/admin/jobs/add"
-                    className={({ isActive }) =>
-                      `block px-3 py-2 text-sm rounded-md ${
-                        isActive
-                          ? "text-indigo-600 bg-indigo-50"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`
-                    }
+                  <button
+                    onClick={() => handleSectionChange("add-job")}
+                    className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
+                      activeSection === "add-job"
+                        ? "text-indigo-600 bg-indigo-50"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
                   >
                     Add New Job
-                  </NavLink>
+                  </button>
                 </li>
               </ul>
             )}
@@ -121,99 +124,87 @@ const AdminSidebar = ({ isOpen = true, toggleSidebar }) => {
             {dropdownOpen.users && (
               <ul className="mt-1 ml-8 space-y-1">
                 <li>
-                  <NavLink
-                    to="/admin/users"
-                    className={({ isActive }) =>
-                      `block px-3 py-2 text-sm rounded-md ${
-                        isActive
-                          ? "text-indigo-600 bg-indigo-50"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`
-                    }
+                  <button
+                    onClick={() => handleSectionChange("users")}
+                    className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
+                      activeSection === "users"
+                        ? "text-indigo-600 bg-indigo-50"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
                   >
                     All Users
-                  </NavLink>
+                  </button>
                 </li>
                 <li>
-                  <NavLink
-                    to="/admin/employers"
-                    className={({ isActive }) =>
-                      `block px-3 py-2 text-sm rounded-md ${
-                        isActive
-                          ? "text-indigo-600 bg-indigo-50"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`
-                    }
+                  <button
+                    onClick={() => handleSectionChange("employers")}
+                    className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
+                      activeSection === "employers"
+                        ? "text-indigo-600 bg-indigo-50"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
                   >
                     Employers
-                  </NavLink>
+                  </button>
                 </li>
               </ul>
             )}
           </li>
 
           <li>
-            <NavLink
-              to="/admin/reports"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`
-              }
+            <button
+              onClick={() => handleSectionChange("reports")}
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                activeSection === "reports"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FiBarChart2 className="w-5 h-5 mr-3" />
               <span>Reports & Analytics</span>
-            </NavLink>
+            </button>
           </li>
 
           <li>
-            <NavLink
-              to="/admin/notifications"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`
-              }
+            <button
+              onClick={() => handleSectionChange("notifications")}
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                activeSection === "notifications"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FiBell className="w-5 h-5 mr-3" />
               <span>Notifications</span>
-            </NavLink>
+            </button>
           </li>
 
           <li>
-            <NavLink
-              to="/admin/settings"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`
-              }
+            <button
+              onClick={() => handleSectionChange("settings")}
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                activeSection === "settings"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FiSettings className="w-5 h-5 mr-3" />
               <span>System Settings</span>
-            </NavLink>
+            </button>
           </li>
 
           <li>
-            <NavLink
-              to="/admin/applications"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`
-              }
+            <button
+              onClick={() => handleSectionChange("applications")}
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                activeSection === "applications"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
             >
               <FiFileText className="w-5 h-5 mr-3" />
               <span>Application Management</span>
-            </NavLink>
+            </button>
           </li>
         </ul>
       </nav>

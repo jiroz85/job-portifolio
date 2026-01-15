@@ -1,35 +1,8 @@
 import { useState, useEffect } from "react";
-import { mockUsers, mockJobs } from "../data/mockData";
+import userApi from "../services/userApi";
+import { jobApi } from "../services/jobApi";
+import { applicationApi } from "../services/applicationApi";
 
-// Mock applications data
-const mockApplications = [
-  {
-    _id: "1",
-    user: { name: "John Doe", email: "john@example.com" },
-    job: { title: "Senior React Developer" },
-    status: "pending",
-    createdAt: "2024-01-15T10:30:00Z",
-    resume: "https://example.com/resume1.pdf",
-  },
-  {
-    _id: "2",
-    user: { name: "Jane Smith", email: "jane@example.com" },
-    job: { title: "Frontend Developer" },
-    status: "reviewed",
-    createdAt: "2024-01-16T14:22:00Z",
-    resume: "https://example.com/resume2.pdf",
-  },
-  {
-    _id: "3",
-    user: { name: "Bob Johnson", email: "bob@example.com" },
-    job: { title: "UI/UX Designer" },
-    status: "interview",
-    createdAt: "2024-01-17T09:15:00Z",
-    resume: "https://example.com/resume3.pdf",
-  },
-];
-
-// Use mock data instead of API calls for testing
 const useAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -41,10 +14,10 @@ const useAdmin = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setUsers(mockUsers);
-      return mockUsers;
+      const response = await userApi.getAllUsers();
+      const usersData = response.data?.users || [];
+      setUsers(usersData);
+      return usersData;
     } catch (err) {
       setError(err.message || "Error fetching users");
       throw err;
@@ -57,10 +30,10 @@ const useAdmin = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setJobs(mockJobs);
-      return mockJobs;
+      const response = await jobApi.getAllJobs();
+      const jobsData = response.data?.jobs || [];
+      setJobs(jobsData);
+      return jobsData;
     } catch (err) {
       setError(err.message || "Error fetching jobs");
       throw err;
@@ -73,8 +46,7 @@ const useAdmin = () => {
   const updateUserStatus = async (userId, status) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await userApi.updateUserStatus(userId, status);
 
       // Update local state
       setUsers((prevUsers) =>
@@ -96,8 +68,7 @@ const useAdmin = () => {
   const deleteUser = async (userId) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await userApi.deleteUser(userId);
 
       // Update local state
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
@@ -115,8 +86,7 @@ const useAdmin = () => {
   const deleteJob = async (jobId) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await jobApi.deleteJob(jobId);
 
       // Update local state
       setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
@@ -134,16 +104,7 @@ const useAdmin = () => {
   const createJob = async (jobData) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Create new job with mock ID
-      const newJob = {
-        id: Date.now().toString(),
-        ...jobData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const newJob = await jobApi.createJob(jobData);
 
       // Update local state
       setJobs((prevJobs) => [...prevJobs, newJob]);
@@ -161,14 +122,7 @@ const useAdmin = () => {
   const getJobById = async (jobId) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const job = jobs.find((j) => j.id === jobId);
-      if (!job) {
-        throw new Error("Job not found");
-      }
-
+      const job = await jobApi.getJobById(jobId);
       return job;
     } catch (err) {
       setError(err.message || "Error fetching job");
@@ -182,8 +136,7 @@ const useAdmin = () => {
   const updateJob = async (jobId, jobData) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await jobApi.updateJob(jobId, jobData);
 
       // Update local state
       setJobs((prevJobs) =>
@@ -207,8 +160,7 @@ const useAdmin = () => {
   const updateJobStatus = async (jobId, status) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await jobApi.updateJobStatus(jobId, status);
 
       // Update local state
       setJobs((prevJobs) =>
@@ -239,20 +191,10 @@ const useAdmin = () => {
   const fetchApplications = async (filters = {}) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      let filteredApplications = [...mockApplications];
-
-      // Apply filters if provided
-      if (filters.status && filters.status !== "all") {
-        filteredApplications = filteredApplications.filter(
-          (app) => app.status === filters.status
-        );
-      }
-
-      setApplications(filteredApplications);
-      return filteredApplications;
+      const response = await applicationApi.getAllApplications(filters);
+      const applicationsData = response.data?.applications || [];
+      setApplications(applicationsData);
+      return applicationsData;
     } catch (err) {
       setError(err.message || "Error fetching applications");
       throw err;
@@ -265,13 +207,12 @@ const useAdmin = () => {
   const updateApplicationStatus = async (applicationId, status) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await applicationApi.updateApplicationStatus(applicationId, status);
 
       // Update local state
       setApplications((prevApplications) =>
         prevApplications.map((app) =>
-          app._id === applicationId ? { ...app, status } : app
+          app.id === applicationId ? { ...app, status } : app
         )
       );
 
@@ -288,12 +229,11 @@ const useAdmin = () => {
   const deleteApplication = async (applicationId) => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await applicationApi.deleteApplication(applicationId);
 
       // Update local state
       setApplications((prevApplications) =>
-        prevApplications.filter((app) => app._id !== applicationId)
+        prevApplications.filter((app) => app.id !== applicationId)
       );
 
       return true;

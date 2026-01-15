@@ -1,27 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { DataTable } from "./DataTable";
+import React, { useState, useEffect, useCallback } from "react";
+import DataTable from "./DataTable";
 import JobForm from "./JobForm";
 import useAdmin from "../../hooks/useAdmin";
 import { toast } from "react-toastify";
 
 const JobManagement = () => {
-  const { fetchJobs, deleteJob, loading, error } = useAdmin();
+  const { fetchJobs, deleteJob, loading } = useAdmin();
   const [jobs, setJobs] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     try {
       const data = await fetchJobs();
       setJobs(data);
     } catch (err) {
-      toast.error(error || "Failed to load jobs");
+      toast.error(err.message || "Failed to load jobs");
     }
-  };
+  }, [fetchJobs]);
+
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
 
   const handleDelete = async (jobId) => {
     if (window.confirm("Are you sure you want to delete this job?")) {
@@ -30,7 +30,7 @@ const JobManagement = () => {
         setJobs(jobs.filter((job) => job._id !== jobId));
         toast.success("Job deleted successfully");
       } catch (err) {
-        toast.error("Failed to delete job");
+        toast.error(err.message || "Failed to delete job");
       }
     }
   };

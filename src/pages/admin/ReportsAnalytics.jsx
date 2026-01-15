@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiBarChart2,
   FiTrendingUp,
@@ -15,20 +15,46 @@ import {
   FiClock,
 } from "react-icons/fi";
 import { useUsers } from "../../context/UserContext";
-import { useJobs } from "../../context/JobContext";
-import { useApplications } from "../../context/ApplicationContext";
+import jobApi from "../../services/jobApi";
+import { applicationService } from "../../services/applicationService";
 
 const ReportsAnalytics = () => {
   const { getUserStatistics } = useUsers();
-  const { getAllJobs } = useJobs();
-  const { getAllApplications } = useApplications();
-
   const userStats = getUserStatistics();
-  const jobs = getAllJobs();
-  const applications = getAllApplications();
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
 
   const [dateRange, setDateRange] = useState("30days");
   const [reportType, setReportType] = useState("overview");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [jobsResponse, applicationsResponse] = await Promise.all([
+          jobApi.getAllJobsAdmin(),
+          applicationService.getAllApplications(),
+        ]);
+
+        if (jobsResponse?.success) {
+          setJobs(jobsResponse.data?.jobs || []);
+        } else {
+          setJobs([]);
+        }
+
+        if (applicationsResponse?.success) {
+          setApplications(applicationsResponse.data || []);
+        } else {
+          setApplications([]);
+        }
+      } catch (error) {
+        console.error("Error loading report data:", error);
+        setJobs([]);
+        setApplications([]);
+      }
+    };
+
+    load();
+  }, []);
 
   // Mock analytics data
   const analyticsData = {

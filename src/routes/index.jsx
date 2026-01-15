@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth";
 import RoleBasedRoute from "../components/auth/RoleBasedRoute";
 import PermissionGuard from "../components/auth/PermissionGuard";
 

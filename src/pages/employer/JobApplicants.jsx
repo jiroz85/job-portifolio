@@ -21,6 +21,9 @@ import {
 } from "react-icons/fi";
 import { jobService } from "../../services/jobService";
 import { applicationService } from "../../services/applicationService";
+import ApplicationActions from "../../components/employer/ApplicationActions";
+import ApplicationWorkflow from "../../components/employer/ApplicationWorkflow";
+import HiringDecision from "../../components/employer/HiringDecision";
 
 const JobApplicants = () => {
   const { jobId } = useParams();
@@ -206,25 +209,110 @@ const JobApplicants = () => {
       // Find the application to get the applicationId
       const applicant = applicants.find((a) => a.id === applicantId);
       if (applicant && applicant.applicationId) {
+        // Check if status is actually changing
+        if (applicant.status === newStatus) {
+          console.log(`Status is already ${newStatus}, skipping update`);
+          setShowDropdown(null);
+          return;
+        }
+
+        console.log(
+          `Updating application ${applicant.applicationId} to status: ${newStatus}`
+        );
+
         // Update in backend first
-        await applicationService.updateApplicationStatus(
+        const response = await applicationService.updateApplicationStatus(
           applicant.applicationId,
           { status: newStatus }
         );
-      }
 
-      // Update local state
-      setApplicants(
-        applicants.map((applicant) =>
-          applicant.id === applicantId
-            ? { ...applicant, status: newStatus }
-            : applicant
-        )
-      );
+        if (response.success) {
+          // Update local state
+          setApplicants(
+            applicants.map((applicant) =>
+              applicant.id === applicantId
+                ? { ...applicant, status: newStatus }
+                : applicant
+            )
+          );
+
+          // Emit real-time event for job seeker
+          const statusUpdateEvent = new CustomEvent(
+            "applicationStatusUpdated",
+            {
+              detail: {
+                applicationId: applicant.applicationId,
+                jobId: jobId,
+                applicantEmail: applicant.email,
+                newStatus: newStatus,
+                previousStatus: applicant.status,
+                timestamp: new Date().toISOString(),
+              },
+            }
+          );
+
+          // Dispatch for cross-tab communication
+          window.dispatchEvent(statusUpdateEvent);
+
+          // Store in localStorage for persistence across tabs
+          localStorage.setItem(
+            "applicationStatusUpdate",
+            JSON.stringify({
+              applicationId: applicant.applicationId,
+              jobId: jobId,
+              applicantEmail: applicant.email,
+              newStatus: newStatus,
+              previousStatus: applicant.status,
+              timestamp: new Date().toISOString(),
+            })
+          );
+
+          console.log(
+            `✅ Status updated successfully: ${applicant.status} → ${newStatus}`
+          );
+
+          // Show success notification
+          alert(
+            `Application status updated to: ${newStatus
+              .replace("_", " ")
+              .toUpperCase()}`
+          );
+        } else {
+          throw new Error(response.error || "Failed to update status");
+        }
+      }
       setShowDropdown(null);
     } catch (error) {
-      console.error("Error updating application status:", error);
-      alert("Failed to update application status");
+      console.error("❌ Error updating application status:", error);
+      alert(`Failed to update application status: ${error.message}`);
+    }
+  };
+
+  const handleSendMessage = async (applicantId, message) => {
+    try {
+      // In a real implementation, this would send an email or in-app message
+      console.log("Sending message to applicant:", applicantId, message);
+      alert(`Message sent to applicant: ${message}`);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      alert("Failed to send message");
+    }
+  };
+
+  const handleScheduleInterview = async (applicantId, interviewDetails) => {
+    try {
+      // In a real implementation, this would create an interview record
+      console.log(
+        "Scheduling interview for applicant:",
+        applicantId,
+        interviewDetails
+      );
+      alert(
+        `Interview scheduled: ${interviewDetails.type} on ${interviewDetails.date} at ${interviewDetails.time}`
+      );
+    } catch (error) {
+      console.error("Error scheduling interview:", error);
+      alert("Failed to schedule interview");
     }
   };
 
@@ -488,8 +576,14 @@ const JobApplicants = () => {
                   className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center justify-center"
                 >
                   <FiEye className="mr-2" />
-                  View
+                  View Details
                 </button>
+                <ApplicationActions
+                  applicant={applicant}
+                  onStatusChange={handleStatusChange}
+                  onSendMessage={handleSendMessage}
+                  onScheduleInterview={handleScheduleInterview}
+                />
                 <button className="px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50 flex items-center justify-center">
                   <FiDownload className="w-4 h-4" />
                 </button>
@@ -647,6 +741,15 @@ const JobApplicants = () => {
                     <p className="text-gray-600 text-sm">
                       {selectedApplicant.notes}
                     </p>
+                  </div>
+
+                  {/* Hiring Decision Component */}
+                  <div className="mb-6">
+                    <HiringDecision
+                      applicant={selectedApplicant}
+                      onStatusChange={handleStatusChange}
+                      onSendMessage={handleSendMessage}
+                    />
                   </div>
 
                   <div className="flex space-x-3">

@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 
+// Configure axios with base URL
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
+});
+
 const UserContext = createContext();
 
 export const useUsers = () => {
@@ -32,11 +37,18 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("/api/users", {
+      const response = await api.get("/api/users", {
         ...getAuthConfig(),
         params,
       });
-      setUsers(response.data.data.users);
+
+      // Handle different response formats from backend
+      const usersData =
+        response.data?.data?.users ||
+        response.data?.users ||
+        response.data ||
+        [];
+      setUsers(usersData);
       return response.data;
     } catch (err) {
       const errorMessage = err.response?.data?.error || "Failed to fetch users";
@@ -52,11 +64,11 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(
-        "/api/users/statistics",
-        getAuthConfig()
-      );
-      setUserStats(response.data.data);
+      const response = await api.get("/api/users/statistics", getAuthConfig());
+
+      // Handle different response formats from backend
+      const statsData = response.data?.data || response.data || {};
+      setUserStats(statsData);
       return response.data;
     } catch (err) {
       const errorMessage =
@@ -73,7 +85,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/users/${id}`, getAuthConfig());
+      const response = await api.get(`/api/users/${id}`, getAuthConfig());
       return response.data;
     } catch (err) {
       const errorMessage = err.response?.data?.error || "Failed to fetch user";
@@ -89,7 +101,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `/api/users/${id}/activity`,
         getAuthConfig()
       );
@@ -109,7 +121,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.put(
+      const response = await api.put(
         `/api/users/${id}`,
         userData,
         getAuthConfig()
@@ -137,7 +149,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.put(
+      const response = await api.put(
         `/api/users/${id}/role`,
         { role },
         getAuthConfig()
@@ -164,7 +176,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.put(
+      const response = await api.put(
         `/api/users/${id}/status`,
         { status },
         getAuthConfig()
@@ -191,7 +203,7 @@ export const UserProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.delete(`/api/users/${id}`, getAuthConfig());
+      const response = await api.delete(`/api/users/${id}`, getAuthConfig());
 
       // Remove user from local state
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
@@ -216,78 +228,29 @@ export const UserProvider = ({ children }) => {
     return userStats;
   };
 
-  // Initialize with mock data for development
+  // Initialize by fetching real data from database
   useEffect(() => {
-    // Mock user data for development
-    const mockUsers = [
-      {
-        id: 1,
-        name: "John Doe",
-        email: "john@example.com",
-        role: "admin",
-        status: "active",
-        lastLogin: "2024-01-20T10:30:00Z",
-        createdAt: "2024-01-15T08:00:00Z",
-        applicationsCount: 5,
-        savedJobsCount: 12,
-      },
-      {
-        id: 2,
-        name: "Jane Smith",
-        email: "jane@example.com",
-        role: "user",
-        status: "active",
-        lastLogin: "2024-01-19T15:45:00Z",
-        createdAt: "2024-01-14T09:30:00Z",
-        applicationsCount: 8,
-        savedJobsCount: 6,
-      },
-      {
-        id: 3,
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        role: "user",
-        status: "blocked",
-        lastLogin: "2024-01-18T11:20:00Z",
-        createdAt: "2024-01-13T14:15:00Z",
-        applicationsCount: 3,
-        savedJobsCount: 2,
-      },
-      {
-        id: 4,
-        name: "Alice Brown",
-        email: "alice@example.com",
-        role: "employer",
-        status: "active",
-        lastLogin: "2024-01-20T09:10:00Z",
-        createdAt: "2024-01-12T16:45:00Z",
-        applicationsCount: 0,
-        savedJobsCount: 0,
-      },
-    ];
+    // Only fetch users if we have an auth token (user is logged in) AND user is admin
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
 
-    const mockStats = {
-      totalUsers: 89,
-      activeUsers: 75,
-      inactiveUsers: 8,
-      blockedUsers: 6,
-      roleStats: [
-        { role: "user", count: 65 },
-        { role: "employer", count: 18 },
-        { role: "admin", count: 6 },
-      ],
-      recentUsers: mockUsers.slice(0, 5),
-      registrationTrend: [
-        { date: "2024-01-01", count: 3 },
-        { date: "2024-01-02", count: 5 },
-        { date: "2024-01-03", count: 2 },
-        { date: "2024-01-04", count: 7 },
-        { date: "2024-01-05", count: 4 },
-      ],
-    };
-
-    setUsers(mockUsers);
-    setUserStats(mockStats);
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        // Only fetch admin data if user is actually an admin
+        if (user.role === "admin") {
+          fetchUsers().catch((err) => {
+            console.log("Failed to fetch users:", err.message);
+          });
+          fetchUserStats().catch((err) => {
+            console.log("Failed to fetch user stats:", err.message);
+          });
+        }
+      } catch (err) {
+        console.log("Failed to parse user data:", err);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = {

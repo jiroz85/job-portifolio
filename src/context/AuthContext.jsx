@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import authApi from "../services/authApi";
@@ -43,7 +37,11 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem("token");
 
-      if (storedToken) {
+      if (
+        storedToken &&
+        storedToken !== "undefined" &&
+        storedToken !== "null"
+      ) {
         setToken(storedToken);
         setAuthToken(storedToken);
         try {
@@ -74,7 +72,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.login(email, password);
 
       if (response.success) {
-        const { token: newToken, ...userData } = response.data;
+        const authData = response.data;
+        const { token: newToken, ...userData } = authData;
 
         // Save token and user data
         localStorage.setItem("token", newToken);
@@ -115,7 +114,8 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.register(userData);
 
       if (response.success) {
-        const { token: newToken, ...userResponseData } = response.data;
+        const authData = response.data;
+        const { token: newToken, ...userResponseData } = authData;
 
         // Save token and user data
         localStorage.setItem("token", newToken);
@@ -232,15 +232,6 @@ export const AuthProvider = ({ children }) => {
       )}
     </AuthContext.Provider>
   );
-};
-
-// Custom hook to use the auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 };
 
 export default AuthContext;

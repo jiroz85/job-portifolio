@@ -1,14 +1,12 @@
 import { FiBriefcase, FiUsers, FiFileText, FiDollarSign } from "react-icons/fi";
-import useAdmin from "../../hooks/useAdmin";
 
-const DashboardStats = () => {
-  const { users, jobs, loading } = useAdmin();
+const DashboardStats = ({ stats }) => {
+  const totalJobs = stats?.totalJobs ?? 0;
+  const totalUsers = stats?.totalUsers ?? 0;
+  const totalApplications = stats?.totalApplications ?? 0;
+  const recentActivity = stats?.recentActivity ?? 0;
 
-  // Calculate real statistics from data
-  const totalJobs = jobs ? jobs.length : 0;
-  const totalUsers = users ? users.length : 0;
-
-  const stats = [
+  const statsData = [
     {
       id: 1,
       name: "Total Jobs",
@@ -28,44 +26,23 @@ const DashboardStats = () => {
     {
       id: 3,
       name: "Applications",
-      value: "2,345", // Will be implemented when application data is available
+      value: totalApplications.toString(),
       icon: FiFileText,
       change: "-2.3%",
       changeType: "decrease",
     },
     {
       id: 4,
-      name: "Revenue",
-      value: "$34,567", // Will be implemented when payment data is available
+      name: "Recent Activity",
+      value: recentActivity.toString(),
       icon: FiDollarSign,
       change: "+8.1%",
       changeType: "increase",
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 gap-5 mt-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, index) => (
-          <div
-            key={index}
-            className="px-4 py-5 overflow-hidden bg-white rounded-lg shadow sm:p-6 animate-pulse"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gray-200 rounded-md"></div>
-              <div className="ml-5 w-0 flex-1">
-                <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
   return (
     <div className="grid grid-cols-1 gap-5 mt-6 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => (
+      {statsData.map((stat) => (
         <div
           key={stat.id}
           className="px-4 py-5 overflow-hidden bg-white rounded-lg shadow sm:p-6"

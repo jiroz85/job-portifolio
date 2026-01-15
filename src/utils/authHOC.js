@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth";
 import { hasPermission, canAccessRoute } from "./permissions";
 import { Navigate } from "react-router-dom";
 

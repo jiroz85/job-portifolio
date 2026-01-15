@@ -10,9 +10,12 @@ import {
   FiPlus,
   FiActivity,
   FiRefreshCw,
+  FiXCircle,
 } from "react-icons/fi";
 import { jobService } from "../../services/jobService";
 import { applicationService } from "../../services/applicationService";
+import EmployerNotifications from "../../components/employer/EmployerNotifications";
+import EmployerWorkflowDemo from "../../components/employer/EmployerWorkflowDemo";
 
 const EmployerDashboard = () => {
   const [stats, setStats] = useState([
@@ -52,6 +55,7 @@ const EmployerDashboard = () => {
 
   const [recentApplications, setRecentApplications] = useState([]);
   const [jobPerformance, setJobPerformance] = useState([]);
+  const [showWorkflowDemo, setShowWorkflowDemo] = useState(false);
 
   // Fetch dashboard data from backend
   const fetchDashboardData = useCallback(async () => {
@@ -243,6 +247,16 @@ const EmployerDashboard = () => {
     },
   ];
 
+  const workflowActions = [
+    {
+      title: "See Workflow Demo",
+      description: "Step-by-step hiring process",
+      icon: FiActivity,
+      color: "bg-pink-600",
+      action: () => setShowWorkflowDemo(true),
+    },
+  ];
+
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -272,13 +286,16 @@ const EmployerDashboard = () => {
               Manage your job postings and track applicant progress.
             </p>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <FiRefreshCw className="mr-2" />
-            Refresh
-          </button>
+          <div className="flex items-center space-x-4">
+            <EmployerNotifications />
+            <button
+              onClick={handleRefresh}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FiRefreshCw className="mr-2" />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -422,11 +439,12 @@ const EmployerDashboard = () => {
             </h2>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickActions.map((action, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {[...quickActions, ...workflowActions].map((action, index) => (
                 <a
                   key={index}
-                  href={action.href}
+                  href={action.href || "#"}
+                  onClick={action.action}
                   className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center">
@@ -448,6 +466,28 @@ const EmployerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Workflow Demo Modal */}
+      {showWorkflowDemo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Step-by-Step Hiring Workflow
+                </h2>
+                <button
+                  onClick={() => setShowWorkflowDemo(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FiXCircle className="w-6 h-6" />
+                </button>
+              </div>
+              <EmployerWorkflowDemo />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

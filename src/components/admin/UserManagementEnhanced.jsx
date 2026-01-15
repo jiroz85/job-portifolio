@@ -10,9 +10,9 @@ import {
   FiUserX,
 } from "react-icons/fi";
 import DataTable from "./DataTable";
-import { useAuth } from "../../context/AuthContext";
-import { userApi } from "../../services/userApi";
-import { auditService } from "../../services/auditService";
+import useAuth from "../../hooks/useAuth";
+import userApi from "../../services/userApi";
+import auditService from "../../services/auditService";
 
 const UserManagementEnhanced = () => {
   const { user: currentUser } = useAuth();

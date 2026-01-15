@@ -29,18 +29,9 @@ import { applicationService } from "../services/applicationService";
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { getUserApplications, getApplicationStatusOptions } =
-    useApplications();
+  const { getUserApplications } = useApplications();
   const { getPublishedJobs } = useJobs();
-  const {
-    savedJobs,
-    savedCompanies,
-    saveJob,
-    unsaveJob,
-    isJobSaved,
-    getSavedJobsCount,
-    getSavedCompaniesCount,
-  } = useSavedJobs();
+  const { saveJob, unsaveJob, isJobSaved, getSavedJobsCount } = useSavedJobs();
 
   const userApplications = getUserApplications(user?.email);
   const publishedJobs = getPublishedJobs();
@@ -68,6 +59,78 @@ const UserDashboard = () => {
     };
 
     fetchUserApplications();
+  }, [user?.email]);
+
+  // Listen for real-time status updates
+  useEffect(() => {
+    const handleStatusUpdate = (event) => {
+      console.log(
+        "🔄 UserDashboard: Received status update event",
+        event.detail
+      );
+
+      // Update the specific application in real-time
+      if (event.detail && event.detail.applicantEmail === user?.email) {
+        setRealApplications((prevApplications) =>
+          prevApplications.map((app) =>
+            app.id === event.detail.applicationId
+              ? { ...app, status: event.detail.newStatus }
+              : app
+          )
+        );
+
+        // Show notification to user
+        const statusMessages = {
+          under_review: "Your application is being reviewed!",
+          shortlisted: "Congratulations! You have been shortlisted!",
+          interview_scheduled: "Interview has been scheduled!",
+          interviewed: "Interview completed - awaiting decision",
+          offered: "Congratulations! You have received a job offer!",
+          accepted: "Welcome aboard! Your application has been accepted.",
+          rejected: "Your application was not selected for this position.",
+        };
+
+        const message =
+          statusMessages[event.detail.newStatus] ||
+          `Application status updated to: ${event.detail.newStatus}`;
+
+        // Show browser notification if permitted
+        if (Notification.permission === "granted") {
+          new Notification("Application Status Update", {
+            body: message,
+            icon: "/favicon.ico",
+          });
+        }
+
+        // Show in-app notification
+        alert(`📬 ${message}`);
+      }
+    };
+
+    const handleStorageChange = (event) => {
+      if (event.key === "applicationStatusUpdate") {
+        const statusUpdate = JSON.parse(event.newValue);
+        if (statusUpdate.applicantEmail === user?.email) {
+          handleStatusUpdate({ detail: statusUpdate });
+        }
+      }
+    };
+
+    // Request notification permission
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    window.addEventListener("applicationStatusUpdated", handleStatusUpdate);
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener(
+        "applicationStatusUpdated",
+        handleStatusUpdate
+      );
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, [user?.email]);
 
   const mockSavedJobs = [
@@ -188,17 +251,18 @@ const UserDashboard = () => {
   const stats = realApplications.reduce(
     (acc, app) => {
       acc.total++;
-      if (app.status === "applied") acc.applied++;
-      else if (app.status === "under_review" || app.status === "viewed")
+      acc.applied++; // Count all applications as "Applications"
+      if (app.status === "under_review" || app.status === "viewed")
         acc.viewed++;
       else if (app.status === "shortlisted") acc.shortlisted++;
       else if (app.status === "offered" || app.status === "accepted")
-        acc.offered++;
+        acc.offers++;
       else if (
         app.status === "interview_scheduled" ||
         app.status === "interviewed"
       )
         acc.interviews++;
+      else if (app.status === "rejected") acc.rejected++;
       return acc;
     },
     {
@@ -208,6 +272,7 @@ const UserDashboard = () => {
       shortlisted: 0,
       interviews: 0,
       offers: 0,
+      rejected: 0,
       saved: getSavedJobsCount(),
     }
   );
@@ -281,34 +346,6 @@ const UserDashboard = () => {
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div>
-            {/* Profile Completion */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Profile Completion
-                </h3>
-                <span className="text-2xl font-bold text-blue-600">
-                  {profileCompletion}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${profileCompletion}%` }}
-                ></div>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">
-                Complete your profile to increase visibility to recruiters
-              </p>
-              <Link
-                to="/profile"
-                className="mt-3 inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-              >
-                <FiEdit className="mr-1" />
-                Complete Profile
-              </Link>
-            </div>
-
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -562,6 +599,7 @@ const UserDashboard = () => {
                   <option value="offered">Offered</option>
                   <option value="accepted">Accepted</option>
                   <option value="rejected">Rejected</option>
+                  <option value="withdrawn">Withdrawn</option>
                 </select>
               </div>
             </div>

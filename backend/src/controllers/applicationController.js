@@ -1,5 +1,6 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
+const User = require("../models/User");
 
 // Get all applications (for employers/admins)
 const getApplications = async (req, res) => {
@@ -86,13 +87,11 @@ const getApplication = async (req, res) => {
   }
 };
 
-// Create new application (submit job application)
+// Create new application (submit job application) - REQUIRES AUTHENTICATED USER
 const createApplication = async (req, res) => {
   try {
     const {
       jobId,
-      applicantName,
-      applicantEmail,
       applicantPhone,
       coverLetter,
       experience,
@@ -102,19 +101,79 @@ const createApplication = async (req, res) => {
       availability,
     } = req.body;
 
-    console.log("Received application data:", req.body);
+    // Get authenticated user from request (set by authenticateToken middleware)
+    const authenticatedUser = req.user;
 
-    // Validate required fields
-    if (!jobId || !applicantName || !applicantEmail) {
-      console.log("Validation failed - missing required fields:", {
-        jobId,
-        applicantName,
-        applicantEmail,
+    if (!authenticatedUser) {
+      return res.status(401).json({
+        success: false,
+        error: "Authentication required to submit applications",
       });
+    }
+
+    // Verify user is a job seeker or user (allow both roles for application submission)
+    if (
+      authenticatedUser.role !== "jobseeker" &&
+      authenticatedUser.role !== "user" &&
+      authenticatedUser.role !== "admin"
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Only job seekers can submit applications",
+      });
+    }
+
+    console.log("Creating application for authenticated user:", {
+      userId: authenticatedUser.id,
+      userEmail: authenticatedUser.email,
+      userName: authenticatedUser.name,
+    });
+
+    // Enhanced validation
+    if (!jobId) {
       return res.status(400).json({
         success: false,
-        error: "Job ID, applicant name, and email are required",
+        error: "Job ID is required",
       });
+    }
+
+    // Validate authenticated user has required fields
+    if (!authenticatedUser.email) {
+      return res.status(400).json({
+        success: false,
+        error: "User email is required for application submission",
+      });
+    }
+
+    // Use authenticated user data - add fallbacks for missing fields
+    const applicantName =
+      authenticatedUser.name ||
+      authenticatedUser.email?.split("@")[0] ||
+      "Unknown User";
+    const applicantEmail = authenticatedUser.email || "unknown@example.com";
+
+    console.log("Authenticated user data:", {
+      id: authenticatedUser.id,
+      email: authenticatedUser.email,
+      name: authenticatedUser.name,
+      role: authenticatedUser.role,
+    });
+
+    console.log("Application data being set:", {
+      applicantName,
+      applicantEmail,
+      applicantPhone,
+    });
+
+    // Phone number validation (if provided)
+    if (applicantPhone) {
+      const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      if (!phoneRegex.test(applicantPhone) || applicantPhone.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: "Please provide a valid phone number",
+        });
+      }
     }
 
     // Check if job exists and is active
@@ -136,27 +195,112 @@ const createApplication = async (req, res) => {
       });
     }
 
-    // Check if user has already applied for this job (within last 24 hours to prevent spam)
+    // Enhanced duplicate prevention - check if user has already applied for this job
     const existingApplication = await Application.findOne({
       where: {
         jobId,
-        applicantEmail,
-        applicationDate: {
-          [require("sequelize").Op.gte]: new Date(
-            Date.now() - 24 * 60 * 60 * 1000
-          ), // Last 24 hours
-        },
+        applicantEmail: authenticatedUser.email,
       },
     });
 
     if (existingApplication) {
-      return res.status(400).json({
+      // Check if the previous application was recent (within 7 days)
+      const daysSinceLastApplication =
+        (new Date() - new Date(existingApplication.applicationDate)) /
+        (1000 * 60 * 60 * 24);
+
+      if (daysSinceLastApplication < 7) {
+        return res.status(400).json({
+          success: false,
+          error: `You have already applied for this job on ${new Date(
+            existingApplication.applicationDate
+          ).toLocaleDateString()}. Please wait 7 days before reapplying.`,
+        });
+      } else {
+        // If it's been more than 7 days, allow reapplication but update the existing one
+        await existingApplication.update({
+          applicantPhone,
+          coverLetter,
+          experience,
+          education,
+          skills,
+          expectedSalary,
+          availability,
+          applicationDate: new Date(), // Update to current date
+          status: "pending", // Reset to pending
+          lastUpdated: new Date(),
+        });
+
+        // Return the updated application with job details
+        const updatedApplication = await Application.findByPk(
+          existingApplication.id,
+          {
+            include: [
+              {
+                model: Job,
+                as: "job",
+                attributes: ["id", "title", "company", "location"],
+              },
+            ],
+          }
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "Your previous application has been updated successfully",
+          data: updatedApplication,
+        });
+      }
+    }
+
+    // Rate limiting: Check how many applications this user has submitted in the last 24 hours
+    const recentApplications = await Application.count({
+      where: {
+        applicantEmail: authenticatedUser.email,
+        applicationDate: {
+          [require("sequelize").Op.gte]: new Date(
+            Date.now() - 24 * 60 * 60 * 1000
+          ),
+        },
+      },
+    });
+
+    if (recentApplications >= 5) {
+      return res.status(429).json({
         success: false,
-        error: "You have already applied for this job within the last 24 hours",
+        error:
+          "You have reached the daily application limit. Please try again tomorrow.",
       });
     }
 
-    // Create application
+    // Risk assessment - lower risk for authenticated users
+    let riskScore = 0;
+    const suspiciousFactors = [];
+
+    // Check application quality indicators
+    if (!coverLetter || coverLetter.length < 50) {
+      riskScore += 10;
+      suspiciousFactors.push("No or minimal cover letter");
+    }
+
+    if (!skills || skills.split(",").length < 3) {
+      riskScore += 5;
+      suspiciousFactors.push("Few or no skills listed");
+    }
+
+    if (!experience || experience.length < 20) {
+      riskScore += 5;
+      suspiciousFactors.push("Minimal experience description");
+    }
+
+    // Get client IP and user agent for tracking
+    const ipAddress = req.ip || req.connection.remoteAddress || "unknown";
+    const userAgent = req.get("User-Agent") || "unknown";
+
+    // Create verification token
+    const verificationToken = require("crypto").randomBytes(32).toString("hex");
+
+    // Create application with verification data and user ID
     const application = await Application.create({
       jobId,
       applicantName,
@@ -168,6 +312,14 @@ const createApplication = async (req, res) => {
       skills,
       expectedSalary,
       availability,
+      verificationToken,
+      ipAddress,
+      userAgent,
+      riskScore,
+      flagged: riskScore > 50, // Flag if risk score is high
+      userId: authenticatedUser.id, // Link to authenticated user
+      isVerified: true, // Auto-verify for authenticated users
+      emailVerified: true, // Auto-verify email for authenticated users
     });
 
     // Return the created application with job details
@@ -188,9 +340,18 @@ const createApplication = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating application:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      errors: error.errors,
+    });
     res.status(500).json({
       success: false,
-      error: "Failed to submit application",
+      error:
+        process.env.NODE_ENV === "development"
+          ? `Server error: ${error.message}`
+          : "Failed to submit application",
     });
   }
 };
@@ -313,6 +474,56 @@ const getApplicationsByEmail = async (req, res) => {
   }
 };
 
+// Verify applicant email
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: "Verification token is required",
+      });
+    }
+
+    const application = await Application.findOne({
+      where: { verificationToken: token },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        error: "Invalid or expired verification token",
+      });
+    }
+
+    // Update verification status
+    await application.update({
+      emailVerified: true,
+      isVerified: true,
+      verificationToken: null, // Clear token after verification
+      lastUpdated: new Date(),
+    });
+
+    res.json({
+      success: true,
+      message:
+        "Email verified successfully! Your application is now confirmed.",
+      data: {
+        applicationId: application.id,
+        applicantName: application.applicantName,
+        jobTitle: application.job?.title || "Unknown Position",
+      },
+    });
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to verify email",
+    });
+  }
+};
+
 module.exports = {
   getApplications,
   getApplication,
@@ -320,4 +531,5 @@ module.exports = {
   updateApplicationStatus,
   deleteApplication,
   getApplicationsByEmail,
+  verifyEmail,
 };

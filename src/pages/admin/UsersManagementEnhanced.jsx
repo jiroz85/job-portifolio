@@ -52,7 +52,7 @@ const UsersManagementEnhanced = () => {
         return "bg-purple-100 text-purple-800";
       case "employer":
         return "bg-blue-100 text-blue-800";
-      case "user":
+      case "jobseeker":
         return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -179,7 +179,7 @@ const UsersManagementEnhanced = () => {
                 <option value="all">All Roles</option>
                 <option value="admin">Admin</option>
                 <option value="employer">Employer</option>
-                <option value="user">User</option>
+                <option value="jobseeker">Job Seeker</option>
               </select>
               <FiChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
@@ -530,7 +530,7 @@ const UsersManagementEnhanced = () => {
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
               >
-                <option value="user">User</option>
+                <option value="jobseeker">Job Seeker</option>
                 <option value="employer">Employer</option>
                 <option value="admin">Admin</option>
               </select>

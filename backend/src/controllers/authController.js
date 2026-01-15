@@ -1,14 +1,18 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Application = require("../models/Application");
+const Job = require("../models/Job");
 
 // Register user
 const register = async (req, res) => {
   try {
     const { name, email, password, role = "jobseeker" } = req.body;
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : email;
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         error: "Name, email, and password are required",
@@ -16,7 +20,9 @@ const register = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await User.findOne({
+      where: { email: normalizedEmail },
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -31,10 +37,74 @@ const register = async (req, res) => {
     // Create user
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
     });
+
+    // Create sample applications for new job seekers
+    if (role === "jobseeker") {
+      try {
+        const jobs = await Job.findAll({ limit: 3 });
+
+        if (jobs.length > 0) {
+          const sampleApplications = [
+            {
+              jobId: jobs[0].id,
+              applicantName: name,
+              applicantEmail: normalizedEmail,
+              applicantPhone: "+1234567890",
+              coverLetter:
+                "I am very interested in this position and believe my skills match perfectly.",
+              experience: "3 years of experience in the field",
+              education: "Bachelor degree in relevant field",
+              skills: "JavaScript, React, Node.js, Communication",
+              expectedSalary: "$70,000 - $90,000",
+              availability: "2 weeks",
+              status: "pending",
+            },
+            {
+              jobId: jobs[1]?.id || jobs[0].id,
+              applicantName: name,
+              applicantEmail: normalizedEmail,
+              applicantPhone: "+1234567890",
+              coverLetter:
+                "Experienced professional looking for new challenges.",
+              experience: "5 years of professional experience",
+              education: "Master degree in Computer Science",
+              skills: "Python, Django, PostgreSQL, Leadership",
+              expectedSalary: "$80,000 - $100,000",
+              availability: "1 month notice",
+              status: "interview_scheduled",
+            },
+            {
+              jobId: jobs[2]?.id || jobs[0].id,
+              applicantName: name,
+              applicantEmail: normalizedEmail,
+              applicantPhone: "+1234567890",
+              coverLetter: "Senior candidate with strong technical background.",
+              experience: "7 years of experience in software development",
+              education: "PhD in Computer Science",
+              skills: "System Architecture, Cloud, DevOps, Management",
+              expectedSalary: "$120,000 - $140,000",
+              availability: "2 weeks",
+              status: "offered",
+            },
+          ];
+
+          for (const appData of sampleApplications) {
+            await Application.create(appData);
+          }
+
+          console.log(
+            `Created sample applications for new job seeker: ${name}`
+          );
+        }
+      } catch (appError) {
+        console.error("Error creating sample applications:", appError);
+        // Don't fail registration if sample applications fail
+      }
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -67,9 +137,11 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : email;
 
     // Validate input
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         error: "Email and password are required",
@@ -77,7 +149,7 @@ const login = async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: normalizedEmail } });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -86,7 +158,25 @@ const login = async (req, res) => {
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch (compareError) {
+      isMatch = false;
+    }
+
+    // Support legacy/plaintext passwords stored in DB (upgrade on successful login)
+    if (
+      !isMatch &&
+      typeof user.password === "string" &&
+      user.password === password
+    ) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await user.update({ password: hashedPassword });
+      isMatch = true;
+    }
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,

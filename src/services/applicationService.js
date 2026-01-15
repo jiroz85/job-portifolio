@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL = `${
+  import.meta.env.VITE_API_URL || "http://localhost:3001"
+}/api`;
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export const applicationService = {
   // Get all applications (admin/employer)
@@ -8,6 +15,9 @@ export const applicationService = {
     try {
       const response = await axios.get(`${API_BASE_URL}/applications`, {
         params,
+        headers: {
+          ...getAuthHeaders(),
+        },
       });
       return response.data;
     } catch (error) {
@@ -19,7 +29,11 @@ export const applicationService = {
   // Get single application
   getApplicationById: async (id) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/applications/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/applications/${id}`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error fetching application:", error);
@@ -27,12 +41,38 @@ export const applicationService = {
     }
   },
 
-  // Submit application
+  // Submit application - REQUIRES AUTHENTICATED USER
   submitApplication: async (applicationData) => {
     try {
+      // Only send fields that are needed - user data will come from authentication
+      const {
+        jobId,
+        applicantPhone,
+        coverLetter,
+        experience,
+        education,
+        skills,
+        expectedSalary,
+        availability,
+      } = applicationData;
+
       const response = await axios.post(
         `${API_BASE_URL}/applications`,
-        applicationData
+        {
+          jobId,
+          applicantPhone,
+          coverLetter,
+          experience,
+          education,
+          skills,
+          expectedSalary,
+          availability,
+        },
+        {
+          headers: {
+            ...getAuthHeaders(),
+          },
+        }
       );
       return response.data;
     } catch (error) {
@@ -46,7 +86,12 @@ export const applicationService = {
     try {
       const response = await axios.put(
         `${API_BASE_URL}/applications/${id}/status`,
-        statusData
+        statusData,
+        {
+          headers: {
+            ...getAuthHeaders(),
+          },
+        }
       );
       return response.data;
     } catch (error) {
@@ -84,7 +129,14 @@ export const applicationService = {
   // Delete application
   deleteApplication: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/applications/${id}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/applications/${id}`,
+        {
+          headers: {
+            ...getAuthHeaders(),
+          },
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error deleting application:", error);

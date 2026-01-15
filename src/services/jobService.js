@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL = `${
+  import.meta.env.VITE_API_URL || "http://localhost:3001"
+}/api`;
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export const jobService = {
   // Get all jobs
@@ -28,7 +35,11 @@ export const jobService = {
   // Create new job
   createJob: async (jobData) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/jobs`, jobData);
+      const response = await axios.post(`${API_BASE_URL}/jobs`, jobData, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error creating job:", error);
@@ -39,7 +50,11 @@ export const jobService = {
   // Update job
   updateJob: async (id, jobData) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/jobs/${id}`, jobData);
+      const response = await axios.put(`${API_BASE_URL}/jobs/${id}`, jobData, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error updating job:", error);
@@ -50,7 +65,11 @@ export const jobService = {
   // Delete job
   deleteJob: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/jobs/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/jobs/${id}`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error deleting job:", error);

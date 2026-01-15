@@ -235,7 +235,7 @@ const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!["user", "admin", "employer"].includes(role)) {
+    if (!["jobseeker", "admin", "employer"].includes(role)) {
       return res.status(400).json({
         success: false,
         error: "Invalid role",
@@ -345,6 +345,23 @@ const getUserStatistics = async (req, res) => {
     const inactiveUsers = await User.count({ where: { status: "inactive" } });
     const blockedUsers = await User.count({ where: { status: "blocked" } });
 
+    // Get total jobs count
+    const totalJobs = await Job.count();
+
+    // Get total applications count
+    const totalApplications = await Application.count();
+
+    // Get recent activity (applications in last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentActivity = await Application.count({
+      where: {
+        createdAt: {
+          [Op.gte]: sevenDaysAgo,
+        },
+      },
+    });
+
     const roleStats = await User.findAll({
       attributes: [
         "role",
@@ -383,6 +400,9 @@ const getUserStatistics = async (req, res) => {
       success: true,
       data: {
         totalUsers,
+        totalJobs,
+        totalApplications,
+        recentActivity,
         activeUsers,
         inactiveUsers,
         blockedUsers,

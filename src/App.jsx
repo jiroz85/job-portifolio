@@ -20,7 +20,7 @@ import Register from "./pages/Register";
 import UserDashboard from "./pages/UserDashboard";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminLayout from "./pages/admin/AdminLayout";
-import Dashboard from "./pages/admin/Dashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import JobsManagement from "./pages/admin/JobsManagement";
 import AddJob from "./pages/admin/AddJob";
 import UsersManagement from "./pages/admin/UsersManagementEnhanced";
@@ -28,6 +28,7 @@ import EmployerManagement from "./pages/admin/EmployerManagement";
 import ApplicationsManagement from "./pages/admin/ApplicationsManagement";
 import ReportsAnalytics from "./pages/admin/ReportsAnalytics";
 import SystemSettings from "./pages/admin/SystemSettings";
+import Notifications from "./components/admin/Notifications";
 import EmployerLayout from "./pages/employer/EmployerLayout";
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
 import PostJob from "./pages/employer/PostJob";
@@ -85,7 +86,7 @@ function App() {
                               </AdminRoute>
                             }
                           >
-                            <Route index element={<Dashboard />} />
+                            <Route index element={<AdminDashboard />} />
                             <Route path="jobs" element={<JobsManagement />} />
                             <Route path="jobs/add" element={<AddJob />} />
                             <Route path="users" element={<UsersManagement />} />
@@ -100,6 +101,10 @@ function App() {
                             <Route
                               path="reports"
                               element={<ReportsAnalytics />}
+                            />
+                            <Route
+                              path="notifications"
+                              element={<Notifications />}
                             />
                             <Route
                               path="settings"

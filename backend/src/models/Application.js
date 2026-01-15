@@ -113,6 +113,46 @@ const Application = sequelize.define(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    // Verification fields for applicant legitimacy
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: "Whether the applicant has been verified as legitimate",
+    },
+    verificationToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Token for email verification",
+    },
+    emailVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: "Whether the applicant's email has been verified",
+    },
+    ipAddress: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "IP address of the applicant for fraud detection",
+    },
+    userAgent: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "Browser user agent for application tracking",
+    },
+    riskScore: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: "Risk assessment score (0-100, higher = more suspicious)",
+    },
+    flagged: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: "Whether this application has been flagged as suspicious",
+    },
   },
   {
     timestamps: true,

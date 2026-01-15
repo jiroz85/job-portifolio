@@ -6,6 +6,9 @@ import {
   FiUser,
   FiUserPlus,
   FiAlertCircle,
+  FiEye,
+  FiEyeOff,
+  FiBriefcase,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import useAuth from "../hooks/useAuth";
@@ -19,6 +22,8 @@ const Register = () => {
     role: "jobseeker",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register } = useAuth();
 
   const handleChange = (e) => {
@@ -70,218 +75,263 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Create your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{" "}
-          <Link
-            to="/login"
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            sign in to your existing account
-          </Link>
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-400/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Full name
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
-                  placeholder="John Doe"
-                />
-              </div>
+      <div className="relative z-10 min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
+              <FiUserPlus className="w-10 h-10 text-white" />
             </div>
-
-            <div>
-              <label
-                htmlFor="role"
-                className="block text-sm font-medium text-gray-700"
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+              Create Account
+            </h2>
+            <p className="text-lg text-gray-600">
+              Join thousands of job seekers and employers
+            </p>
+            <p className="mt-4 text-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
               >
-                Account Type
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
+                Sign in here
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white/80 backdrop-blur-xl py-8 px-4 shadow-2xl rounded-2xl border border-white/20 sm:px-10">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  <option value="jobseeker">Job Seeker</option>
-                  <option value="employer">Employer</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
+                  Full name
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FiUser
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-4 sm:text-sm border-gray-200 rounded-xl h-12 border text-gray-900 bg-white/50 backdrop-blur-sm transition-all duration-200 hover:bg-white focus:bg-white"
+                    placeholder="John Doe"
                   />
                 </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="text"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
-                  placeholder="you@example.com"
-                />
               </div>
-            </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
+                  Account Type
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FiBriefcase
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-4 sm:text-sm border-gray-200 rounded-xl h-12 border text-gray-900 bg-white/50 backdrop-blur-sm transition-all duration-200 hover:bg-white focus:bg-white appearance-none cursor-pointer"
+                  >
+                    <option value="jobseeker">Job Seeker</option>
+                    <option value="employer">Employer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
+                  Email address
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FiMail
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-4 sm:text-sm border-gray-200 rounded-xl h-12 border text-gray-900 bg-white/50 backdrop-blur-sm transition-all duration-200 hover:bg-white focus:bg-white"
+                    placeholder="you@example.com"
                   />
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
-                  placeholder="••••••••"
-                />
               </div>
-            </div>
 
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Confirm password
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FiLock
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-12 sm:text-sm border-gray-200 rounded-xl h-12 border text-gray-900 bg-white/50 backdrop-blur-sm transition-all duration-200 hover:bg-white focus:bg-white"
+                    placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  >
+                    {showPassword ? (
+                      <FiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    ) : (
+                      <FiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    )}
+                  </button>
                 </div>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md h-10 border text-gray-900 bg-white"
-                  placeholder="••••••••"
-                />
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-                }`}
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Creating account...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <FiUserPlus className="mr-2 h-4 w-4" />
-                    Create account
-                  </span>
-                )}
-              </button>
-            </div>
-          </form>
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
+                  Confirm password
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FiLock
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 pr-12 sm:text-sm border-gray-200 rounded-xl h-12 border text-gray-900 bg-white/50 backdrop-blur-sm transition-all duration-200 hover:bg-white focus:bg-white"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  >
+                    {showConfirmPassword ? (
+                      <FiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    ) : (
+                      <FiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-          <div className="mt-6">
+              <div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105 ${
+                    isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Creating account...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <FiUserPlus className="mr-2 h-4 w-4" />
+                      Create account
+                    </span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
+                <span className="px-4 bg-white/80 backdrop-blur-sm text-gray-500">
                   Or continue with
                 </span>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-4">
               <div>
                 <a
                   href="#"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 rounded-xl shadow-sm bg-white/50 backdrop-blur-sm text-sm font-medium text-gray-600 hover:bg-white transition-all duration-200 hover:shadow-md"
                 >
                   <span className="sr-only">Sign up with Google</span>
                   <svg
@@ -298,7 +348,7 @@ const Register = () => {
               <div>
                 <a
                   href="#"
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  className="w-full inline-flex justify-center py-3 px-4 border border-gray-200 rounded-xl shadow-sm bg-white/50 backdrop-blur-sm text-sm font-medium text-gray-600 hover:bg-white transition-all duration-200 hover:shadow-md"
                 >
                   <span className="sr-only">Sign up with GitHub</span>
                   <svg

@@ -170,10 +170,14 @@ const ApplicationsManagement = () => {
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
-              <option value="reviewing">Reviewing</option>
-              <option value="interview">Interview</option>
+              <option value="under_review">Under Review</option>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="interview_scheduled">Interview Scheduled</option>
+              <option value="interviewed">Interviewed</option>
+              <option value="offered">Offered</option>
               <option value="accepted">Accepted</option>
               <option value="rejected">Rejected</option>
+              <option value="withdrawn">Withdrawn</option>
             </select>
             <select
               className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"

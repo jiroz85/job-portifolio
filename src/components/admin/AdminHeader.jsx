@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiBell,
   FiMenu,
@@ -8,43 +9,55 @@ import {
   FiCheck,
   FiX,
 } from "react-icons/fi";
+import useAuth from "../../hooks/useAuth";
+import auditService from "../../services/auditService";
 
 const AdminHeader = ({ toggleSidebar }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const notifications = [
-    {
-      id: 1,
-      type: "success",
-      message: "New job posting approved",
-      time: "5 minutes ago",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "info",
-      message: "5 new applications received",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      type: "warning",
-      message: "Job posting expiring soon",
-      time: "2 hours ago",
-      read: true,
-    },
-    {
-      id: 4,
-      type: "error",
-      message: "Failed to send email notification",
-      time: "3 hours ago",
-      read: true,
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await auditService.getAuditLogs({ limit: 5 });
+        const logs = response.data?.logs || [];
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+        const mapped = logs.map((log) => {
+          const action = log.action || "AUDIT";
+          const message = log.details || action.replace(/_/g, " ");
+          const time = new Date(log.createdAt).toLocaleString();
+
+          let type = "info";
+          if (action.includes("DELETE") || action.includes("BLOCK"))
+            type = "error";
+          if (action.includes("CREATE") || action.includes("REGISTER"))
+            type = "success";
+
+          return {
+            id: log.id,
+            type,
+            message,
+            time,
+            read: false,
+          };
+        });
+
+        setNotifications(mapped);
+      } catch {
+        setNotifications([]);
+      }
+    };
+
+    load();
+  }, []);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -162,7 +175,9 @@ const AdminHeader = ({ toggleSidebar }) => {
               <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
                 <FiUser className="w-5 h-5 text-indigo-600" />
               </div>
-              <span className="hidden md:inline-block">Admin</span>
+              <span className="hidden md:inline-block">
+                {user?.name || "Admin"}
+              </span>
             </button>
 
             {isProfileOpen && (
@@ -182,6 +197,11 @@ const AdminHeader = ({ toggleSidebar }) => {
                 <a
                   href="#"
                   className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    logout();
+                    navigate("/login");
+                  }}
                 >
                   <FiLogOut className="w-4 h-4 mr-2" />
                   Sign out
