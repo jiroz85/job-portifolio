@@ -305,6 +305,58 @@ const UserDashboard = () => {
     }
   };
 
+  const handleAcceptOffer = async (applicationId) => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        applicationId,
+        "accepted"
+      );
+      if (response.success) {
+        // Update local state
+        setRealApplications((prevApplications) =>
+          prevApplications.map((app) =>
+            app.id === applicationId ? { ...app, status: "accepted" } : app
+          )
+        );
+
+        // Show success message
+        alert("🎉 Congratulations! You have accepted the job offer!");
+
+        // Notify employer (in real app, this would send a notification)
+        console.log("Offer accepted for application:", applicationId);
+      }
+    } catch (error) {
+      console.error("Error accepting offer:", error);
+      alert("Failed to accept offer. Please try again.");
+    }
+  };
+
+  const handleRejectOffer = async (applicationId) => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        applicationId,
+        "rejected"
+      );
+      if (response.success) {
+        // Update local state
+        setRealApplications((prevApplications) =>
+          prevApplications.map((app) =>
+            app.id === applicationId ? { ...app, status: "rejected" } : app
+          )
+        );
+
+        // Show success message
+        alert("You have rejected the job offer.");
+
+        // Notify employer (in real app, this would send a notification)
+        console.log("Offer rejected for application:", applicationId);
+      }
+    } catch (error) {
+      console.error("Error rejecting offer:", error);
+      alert("Failed to reject offer. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -666,6 +718,31 @@ const UserDashboard = () => {
                               {application.status}
                             </span>
                           </span>
+
+                          {/* Accept/Reject buttons for offered applications */}
+                          {application.status === "offered" && (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() =>
+                                  handleAcceptOffer(application.id)
+                                }
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                              >
+                                <FiCheckCircle className="h-3 w-3 mr-1" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleRejectOffer(application.id)
+                                }
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              >
+                                <FiXCircle className="h-3 w-3 mr-1" />
+                                Reject
+                              </button>
+                            </div>
+                          )}
+
                           <Link
                             to={`/jobs/${application.jobId}`}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
